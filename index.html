@@ -6,10 +6,10 @@
     <title>3D FPS Cyber Battlegrounds</title>
     <!-- Tailwind CSS for Responsive UI -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Three.js Library -->
+    <!-- Three.js WebGL Library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@500;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@500;700;900&display=swap');
 
         body {
             margin: 0;
@@ -26,24 +26,24 @@
 
         /* Sci-Fi Glass Panels */
         .glass-panel {
-            background: rgba(10, 15, 28, 0.82);
+            background: rgba(10, 15, 28, 0.85);
             backdrop-filter: blur(14px);
             -webkit-backdrop-filter: blur(14px);
-            border: 1px solid rgba(0, 240, 255, 0.25);
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.6);
+            border: 1px solid rgba(0, 240, 255, 0.28);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.65);
         }
 
         /* Dynamic Crosshair */
         .crosshair-line {
-            background-color: rgba(0, 240, 255, 0.9);
-            box-shadow: 0 0 8px rgba(0, 240, 255, 0.8);
+            background-color: rgba(0, 240, 255, 0.95);
+            box-shadow: 0 0 8px rgba(0, 240, 255, 0.9);
             transition: transform 0.05s ease-out;
         }
 
-        #crosshair.expanded .crosshair-top { transform: translateY(-6px); }
-        #crosshair.expanded .crosshair-bottom { transform: translateY(6px); }
-        #crosshair.expanded .crosshair-left { transform: translateX(-6px); }
-        #crosshair.expanded .crosshair-right { transform: translateX(6px); }
+        #crosshair.expanded .crosshair-top { transform: translateY(-7px); }
+        #crosshair.expanded .crosshair-bottom { transform: translateY(7px); }
+        #crosshair.expanded .crosshair-left { transform: translateX(-7px); }
+        #crosshair.expanded .crosshair-right { transform: translateX(7px); }
 
         /* Hit Marker Flash */
         #hit-marker {
@@ -57,27 +57,40 @@
         }
 
         /* HUD Glows */
-        .bar-glow-hp { box-shadow: 0 0 12px rgba(255, 42, 109, 0.8); }
-        .bar-glow-stamina { box-shadow: 0 0 12px rgba(0, 240, 255, 0.8); }
+        .bar-glow-hp { box-shadow: 0 0 12px rgba(255, 42, 109, 0.85); }
+        .bar-glow-stamina { box-shadow: 0 0 12px rgba(0, 240, 255, 0.85); }
+        .ability-glow-ready { box-shadow: 0 0 16px rgba(0, 240, 255, 0.8); }
 
         /* Damage Vignette Screen Flash */
         #damage-vignette {
             pointer-events: none;
             opacity: 0;
             transition: opacity 0.2s ease;
-            background: radial-gradient(circle, rgba(255,0,0,0) 45%, rgba(255, 0, 60, 0.65) 100%);
+            background: radial-gradient(circle, rgba(255,0,0,0) 40%, rgba(255, 0, 60, 0.7) 100%);
         }
 
         /* Kill feed popups */
         @keyframes fadeUp {
-            0% { opacity: 0; transform: translate(-50%, 12px) scale(0.9); }
+            0% { opacity: 0; transform: translate(-50%, 14px) scale(0.9); }
             20% { opacity: 1; transform: translate(-50%, 0) scale(1.1); }
             80% { opacity: 1; transform: translate(-50%, 0) scale(1); }
-            100% { opacity: 0; transform: translate(-50%, -20px) scale(0.95); }
+            100% { opacity: 0; transform: translate(-50%, -22px) scale(0.95); }
         }
 
         .kill-feed-anim {
-            animation: fadeUp 1.2s forwards ease-out;
+            animation: fadeUp 1.25s forwards ease-out;
+        }
+
+        /* Wave Banner Announcement */
+        @keyframes waveBannerAnim {
+            0% { opacity: 0; transform: translate(-50%, -50%) scale(0.7); }
+            15% { opacity: 1; transform: translate(-50%, -50%) scale(1.1); }
+            85% { opacity: 1; transform: translate(-50%, -50%) scale(1.0); }
+            100% { opacity: 0; transform: translate(-50%, -50%) scale(0.9); }
+        }
+
+        .wave-banner-anim {
+            animation: waveBannerAnim 2.2s forwards ease-in-out;
         }
     </style>
 </head>
@@ -88,6 +101,14 @@
 
     <!-- Red Damage Flash Vignette -->
     <div id="damage-vignette" class="absolute inset-0 w-full h-full z-10"></div>
+
+    <!-- Wave Announcement Overlay -->
+    <div id="wave-banner" class="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 pointer-events-none hidden text-center">
+        <h2 id="wave-banner-title" class="text-4xl sm:text-6xl font-orbitron font-black tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-teal-200 to-pink-500 drop-shadow-[0_0_20px_rgba(0,240,255,0.8)]">
+            WAVE 1
+        </h2>
+        <p id="wave-banner-sub" class="text-sm sm:text-lg text-cyan-300 font-bold uppercase tracking-widest mt-2">PREPARE FOR HOSTILES</p>
+    </div>
 
     <!-- HUD Overlay -->
     <div id="hud" class="absolute inset-0 z-20 pointer-events-none flex flex-col justify-between p-4 sm:p-6 hidden">
@@ -107,10 +128,17 @@
                 </div>
             </div>
 
-            <!-- Hostiles Count -->
-            <div class="glass-panel rounded-xl px-5 py-2 text-center border-red-500/40">
-                <div class="text-[10px] uppercase tracking-widest text-red-400 font-bold">HOSTILES</div>
-                <div id="enemies-val" class="text-2xl font-orbitron font-bold text-red-500">0</div>
+            <!-- Wave & Hostiles Center Box -->
+            <div class="glass-panel rounded-xl px-6 py-2.5 text-center border-cyan-500/40 flex items-center space-x-6">
+                <div>
+                    <div class="text-[10px] uppercase tracking-widest text-teal-400 font-bold">WAVE</div>
+                    <div id="wave-val" class="text-2xl sm:text-3xl font-orbitron font-black text-teal-300">1</div>
+                </div>
+                <div class="h-8 w-px bg-cyan-500/30"></div>
+                <div>
+                    <div class="text-[10px] uppercase tracking-widest text-red-400 font-bold">HOSTILES</div>
+                    <div id="enemies-val" class="text-2xl sm:text-3xl font-orbitron font-bold text-red-500">0</div>
+                </div>
             </div>
 
             <!-- Mode & Sens Indicator -->
@@ -147,34 +175,55 @@
         <!-- Dynamic Kill Feed -->
         <div id="kill-feed-container" class="absolute left-1/2 top-2/3 -translate-x-1/2 pointer-events-none flex flex-col items-center"></div>
 
-        <!-- Bottom Vitals Bar -->
-        <div class="w-full max-w-md mx-auto space-y-2">
-            <!-- Health Bar -->
-            <div>
-                <div class="flex justify-between text-xs font-bold tracking-wider mb-1">
-                    <span class="text-pink-500 uppercase flex items-center">VITALITY</span>
-                    <span id="hp-text" class="text-pink-400 font-orbitron">100 / 100</span>
+        <!-- Bottom Vitals Bar & Ability Meter -->
+        <div class="w-full max-w-xl mx-auto flex items-end space-x-4">
+            
+            <!-- Left Side: Health & Stamina -->
+            <div class="flex-1 space-y-2">
+                <!-- Health Bar -->
+                <div>
+                    <div class="flex justify-between text-xs font-bold tracking-wider mb-1">
+                        <span class="text-pink-500 uppercase flex items-center">VITALITY</span>
+                        <span id="hp-text" class="text-pink-400 font-orbitron">100 / 100</span>
+                    </div>
+                    <div class="w-full h-3.5 bg-gray-950/80 rounded-full overflow-hidden border border-pink-500/30 p-0.5">
+                        <div id="hp-bar" class="h-full bg-gradient-to-r from-red-600 to-pink-500 rounded-full bar-glow-hp transition-all duration-150" style="width: 100%;"></div>
+                    </div>
                 </div>
-                <div class="w-full h-3 bg-gray-950/80 rounded-full overflow-hidden border border-pink-500/30 p-0.5">
-                    <div id="hp-bar" class="h-full bg-gradient-to-r from-red-600 to-pink-500 rounded-full bar-glow-hp transition-all duration-150" style="width: 100%;"></div>
+
+                <!-- Stamina Bar -->
+                <div>
+                    <div class="flex justify-between text-xs font-bold tracking-wider mb-1">
+                        <span class="text-cyan-400 uppercase">STAMINA</span>
+                        <span id="stamina-text" class="text-cyan-400 font-orbitron">100%</span>
+                    </div>
+                    <div class="w-full h-2 bg-gray-950/80 rounded-full overflow-hidden border border-cyan-500/30 p-0.5">
+                        <div id="stamina-bar" class="h-full bg-cyan-400 rounded-full bar-glow-stamina transition-all duration-75" style="width: 100%;"></div>
+                    </div>
                 </div>
             </div>
 
-            <!-- Stamina Bar -->
-            <div>
-                <div class="flex justify-between text-xs font-bold tracking-wider mb-1">
-                    <span class="text-cyan-400 uppercase">STAMINA</span>
-                    <span id="stamina-text" class="text-cyan-400 font-orbitron">100%</span>
+            <!-- Right Side: Special Ability [E] Card -->
+            <div id="ability-card" class="glass-panel p-2.5 rounded-xl border border-cyan-500/40 flex items-center space-x-3 w-52 ability-glow-ready transition-all duration-300">
+                <div class="relative w-11 h-11 flex items-center justify-center bg-cyan-950/80 border border-cyan-400/50 rounded-lg">
+                    <span class="font-orbitron font-black text-cyan-300 text-lg">E</span>
+                    <!-- Circular overlay ring for cooldown -->
+                    <div id="ability-cooldown-ring" class="absolute inset-0 rounded-lg bg-black/75 transition-all" style="clip-path: inset(0 0 0 0);"></div>
                 </div>
-                <div class="w-full h-1.5 bg-gray-950/80 rounded-full overflow-hidden border border-cyan-500/30 p-0.5">
-                    <div id="stamina-bar" class="h-full bg-cyan-400 rounded-full bar-glow-stamina transition-all duration-75" style="width: 100%;"></div>
+                <div class="flex-1">
+                    <div class="text-[9px] uppercase font-bold text-gray-400 tracking-wider">SPECIAL SLAM</div>
+                    <div id="ability-status" class="text-xs font-orbitron font-bold text-cyan-300 tracking-wide">READY</div>
+                    <div class="w-full h-1 bg-gray-900 rounded-full mt-1 overflow-hidden border border-cyan-500/20">
+                        <div id="ability-bar" class="h-full bg-cyan-400 transition-all duration-100" style="width: 100%;"></div>
+                    </div>
                 </div>
             </div>
+
         </div>
     </div>
 
     <!-- Start / Controls Screen Overlay -->
-    <div id="start-overlay" class="absolute inset-0 z-30 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+    <div id="start-overlay" class="absolute inset-0 z-30 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md">
         <div class="glass-panel max-w-lg w-full rounded-2xl p-6 sm:p-8 text-center border-cyan-500/40 relative overflow-hidden">
             <!-- Neon background glows -->
             <div class="absolute -top-12 -left-12 w-32 h-32 bg-cyan-500/20 rounded-full blur-3xl pointer-events-none"></div>
@@ -195,10 +244,14 @@
             </div>
 
             <!-- Keybind Guide -->
-            <div class="space-y-2.5 text-left bg-black/50 rounded-xl p-4 border border-white/10 mb-6 text-xs sm:text-sm text-gray-300">
+            <div class="space-y-2 text-left bg-black/50 rounded-xl p-4 border border-white/10 mb-6 text-xs sm:text-sm text-gray-300">
                 <div class="flex justify-between items-center border-b border-white/10 pb-1.5">
                     <span class="text-gray-400">Attack / Cyber Slash:</span>
                     <span class="text-cyan-400 font-bold font-orbitron">Left Click (M1)</span>
+                </div>
+                <div class="flex justify-between items-center border-b border-white/10 pb-1.5">
+                    <span class="text-gray-400">Shockwave Slam (AOE):</span>
+                    <span class="text-cyan-400 font-bold font-orbitron">Key [E]</span>
                 </div>
                 <div class="flex justify-between items-center border-b border-white/10 pb-1.5">
                     <span class="text-gray-400">Move (Flat Ground):</span>
@@ -206,7 +259,7 @@
                 </div>
                 <div class="flex justify-between items-center border-b border-white/10 pb-1.5">
                     <span class="text-gray-400">Look Around:</span>
-                    <span class="text-cyan-400 font-bold font-orbitron">Mouse Movement / Drag</span>
+                    <span class="text-cyan-400 font-bold font-orbitron">Mouse Look / Drag</span>
                 </div>
                 <div class="flex justify-between items-center border-b border-white/10 pb-1.5">
                     <span class="text-gray-400">Sprint:</span>
@@ -219,9 +272,9 @@
             </div>
 
             <button id="play-btn" class="w-full py-4 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-black font-orbitron font-black tracking-widest rounded-xl shadow-[0_0_20px_rgba(0,240,255,0.4)] transform hover:scale-[1.02] active:scale-[0.98] transition-all duration-150 uppercase text-base sm:text-lg">
-                CLICK TO START ARENA
+                CLICK TO ENTER ARENA
             </button>
-            <p class="text-[10px] text-gray-500 mt-2">Supports Pointer Lock & Fallback Drag-Look for all browsers/iframes</p>
+            <p class="text-[10px] text-gray-500 mt-2">Supports Pointer Lock & Drag-Look Fallback for iframe preview mode</p>
         </div>
     </div>
 
@@ -231,26 +284,30 @@
             <h2 class="text-4xl sm:text-5xl font-orbitron font-black text-red-500 tracking-wider mb-1">ELIMINATED</h2>
             <p class="text-gray-400 text-xs uppercase tracking-widest mb-6">Hostiles overwhelmed your defenses</p>
 
-            <div class="grid grid-cols-2 gap-4 mb-6">
-                <div class="bg-black/50 p-4 rounded-xl border border-white/10">
-                    <div class="text-[10px] text-gray-400 uppercase font-bold">FINAL SCORE</div>
-                    <div id="final-score" class="text-3xl font-orbitron font-bold text-cyan-400">0</div>
+            <div class="grid grid-cols-3 gap-3 mb-6">
+                <div class="bg-black/50 p-3 rounded-xl border border-white/10">
+                    <div class="text-[9px] text-gray-400 uppercase font-bold">SCORE</div>
+                    <div id="final-score" class="text-2xl font-orbitron font-bold text-cyan-400">0</div>
                 </div>
-                <div class="bg-black/50 p-4 rounded-xl border border-white/10">
-                    <div class="text-[10px] text-gray-400 uppercase font-bold">KILLS</div>
-                    <div id="final-kills" class="text-3xl font-orbitron font-bold text-pink-500">0</div>
+                <div class="bg-black/50 p-3 rounded-xl border border-white/10">
+                    <div class="text-[9px] text-gray-400 uppercase font-bold">KILLS</div>
+                    <div id="final-kills" class="text-2xl font-orbitron font-bold text-pink-500">0</div>
+                </div>
+                <div class="bg-black/50 p-3 rounded-xl border border-white/10">
+                    <div class="text-[9px] text-gray-400 uppercase font-bold">WAVE</div>
+                    <div id="final-wave" class="text-2xl font-orbitron font-bold text-teal-400">1</div>
                 </div>
             </div>
 
             <button id="restart-btn" class="w-full py-4 bg-gradient-to-r from-red-600 to-pink-600 hover:from-red-500 hover:to-pink-500 text-white font-orbitron font-bold tracking-widest rounded-xl shadow-[0_0_20px_rgba(255,0,80,0.4)] transform hover:scale-[1.02] active:scale-[0.98] transition-all duration-150 uppercase">
-                RESPAWN
+                RESPAWN ARENA
             </button>
         </div>
     </div>
 
     <script>
         /* =========================================================================
-         *  WEB AUDIO SYNTHESIZER (No external audio files needed)
+         *  SYNTHESIZED AUDIO ENGINE (Web Audio API - No External Files)
          * ========================================================================= */
         class SoundEngine {
             constructor() { this.ctx = null; }
@@ -271,8 +328,8 @@
                 const osc = this.ctx.createOscillator();
                 const gain = this.ctx.createGain();
                 osc.type = 'sine';
-                osc.frequency.setValueAtTime(450, now);
-                osc.frequency.exponentialRampToValueAtTime(70, now + 0.16);
+                osc.frequency.setValueAtTime(480, now);
+                osc.frequency.exponentialRampToValueAtTime(75, now + 0.16);
                 gain.gain.setValueAtTime(0.3, now);
                 gain.gain.exponentialRampToValueAtTime(0.01, now + 0.16);
                 osc.connect(gain);
@@ -287,14 +344,44 @@
                 const osc = this.ctx.createOscillator();
                 const gain = this.ctx.createGain();
                 osc.type = 'triangle';
-                osc.frequency.setValueAtTime(220, now);
-                osc.frequency.exponentialRampToValueAtTime(40, now + 0.1);
+                osc.frequency.setValueAtTime(260, now);
+                osc.frequency.exponentialRampToValueAtTime(50, now + 0.12);
                 gain.gain.setValueAtTime(0.5, now);
-                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.12);
                 osc.connect(gain);
                 gain.connect(this.ctx.destination);
                 osc.start(now);
-                osc.stop(now + 0.1);
+                osc.stop(now + 0.12);
+            }
+
+            playShockwave() {
+                if (!this.ctx) return;
+                const now = this.ctx.currentTime;
+                // Sub Bass Boom
+                const osc1 = this.ctx.createOscillator();
+                const gain1 = this.ctx.createGain();
+                osc1.type = 'sawtooth';
+                osc1.frequency.setValueAtTime(180, now);
+                osc1.frequency.exponentialRampToValueAtTime(25, now + 0.55);
+                gain1.gain.setValueAtTime(0.65, now);
+                gain1.gain.exponentialRampToValueAtTime(0.01, now + 0.55);
+                osc1.connect(gain1);
+                gain1.connect(this.ctx.destination);
+                osc1.start(now);
+                osc1.stop(now + 0.55);
+
+                // Cyber Sweep Tone
+                const osc2 = this.ctx.createOscillator();
+                const gain2 = this.ctx.createGain();
+                osc2.type = 'sine';
+                osc2.frequency.setValueAtTime(120, now);
+                osc2.frequency.exponentialRampToValueAtTime(750, now + 0.28);
+                gain2.gain.setValueAtTime(0.35, now);
+                gain2.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+                osc2.connect(gain2);
+                gain2.connect(this.ctx.destination);
+                osc2.start(now);
+                osc2.stop(now + 0.3);
             }
 
             playJump() {
@@ -303,14 +390,14 @@
                 const osc = this.ctx.createOscillator();
                 const gain = this.ctx.createGain();
                 osc.type = 'sine';
-                osc.frequency.setValueAtTime(150, now);
-                osc.frequency.exponentialRampToValueAtTime(320, now + 0.12);
-                gain.gain.setValueAtTime(0.2, now);
-                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.12);
+                osc.frequency.setValueAtTime(140, now);
+                osc.frequency.exponentialRampToValueAtTime(340, now + 0.13);
+                gain.gain.setValueAtTime(0.22, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.13);
                 osc.connect(gain);
                 gain.connect(this.ctx.destination);
                 osc.start(now);
-                osc.stop(now + 0.12);
+                osc.stop(now + 0.13);
             }
 
             playEnemyDeath() {
@@ -319,14 +406,14 @@
                 const osc = this.ctx.createOscillator();
                 const gain = this.ctx.createGain();
                 osc.type = 'sawtooth';
-                osc.frequency.setValueAtTime(160, now);
-                osc.frequency.exponentialRampToValueAtTime(20, now + 0.35);
-                gain.gain.setValueAtTime(0.4, now);
-                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.35);
+                osc.frequency.setValueAtTime(170, now);
+                osc.frequency.exponentialRampToValueAtTime(20, now + 0.38);
+                gain.gain.setValueAtTime(0.45, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.38);
                 osc.connect(gain);
                 gain.connect(this.ctx.destination);
                 osc.start(now);
-                osc.stop(now + 0.35);
+                osc.stop(now + 0.38);
             }
 
             playHurt() {
@@ -335,14 +422,14 @@
                 const osc = this.ctx.createOscillator();
                 const gain = this.ctx.createGain();
                 osc.type = 'square';
-                osc.frequency.setValueAtTime(140, now);
-                osc.frequency.linearRampToValueAtTime(50, now + 0.18);
+                osc.frequency.setValueAtTime(150, now);
+                osc.frequency.linearRampToValueAtTime(45, now + 0.2);
                 gain.gain.setValueAtTime(0.35, now);
-                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.18);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
                 osc.connect(gain);
                 gain.connect(this.ctx.destination);
                 osc.start(now);
-                osc.stop(now + 0.18);
+                osc.stop(now + 0.2);
             }
         }
 
@@ -357,21 +444,21 @@
             canvas.height = 512;
             const ctx = canvas.getContext('2d');
 
-            ctx.fillStyle = '#080c16';
+            ctx.fillStyle = '#060a14';
             ctx.fillRect(0, 0, 512, 512);
 
-            ctx.strokeStyle = '#101a30';
+            ctx.strokeStyle = '#0e182e';
             ctx.lineWidth = 6;
             ctx.strokeRect(0, 0, 512, 512);
 
-            ctx.strokeStyle = 'rgba(0, 240, 255, 0.15)';
+            ctx.strokeStyle = 'rgba(0, 240, 255, 0.18)';
             ctx.lineWidth = 2;
             for (let i = 0; i < 512; i += 64) {
                 ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, 512); ctx.stroke();
                 ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(512, i); ctx.stroke();
             }
 
-            ctx.fillStyle = 'rgba(0, 240, 255, 0.3)';
+            ctx.fillStyle = 'rgba(0, 240, 255, 0.35)';
             ctx.fillRect(6, 6, 20, 20);
             ctx.fillRect(486, 6, 20, 20);
             ctx.fillRect(6, 486, 20, 20);
@@ -394,7 +481,7 @@
 
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
         
-        // CRITICAL FIX FOR SMOOTH FPS CAMERA ROTATION (NO TWISTING/GIMBAL LOCK)
+        // PITCH CLAMPING ROTATION ORDER FIX (YXZ PREVENTS ROLL / TWISTING)
         camera.rotation.order = 'YXZ';
 
         const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
@@ -404,7 +491,7 @@
         renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         container.appendChild(renderer.domElement);
 
-        // Lights
+        // Ambient & Directional Arena Lighting
         const ambientLight = new THREE.AmbientLight(0x1a2638, 1.4);
         scene.add(ambientLight);
 
@@ -421,7 +508,7 @@
         scene.add(dirLight);
 
         /* =========================================================================
-         *  ARENA & OBSTACLE BUILDER
+         *  ARENA & ENVIRONMENT BUILDER
          * ========================================================================= */
         const arenaSize = 90;
         const floorGeo = new THREE.PlaneGeometry(arenaSize, arenaSize);
@@ -435,7 +522,7 @@
         floor.receiveShadow = true;
         scene.add(floor);
 
-        // Outer Perimeter Walls
+        // Perimeter Walls
         const wallMat = new THREE.MeshStandardMaterial({ color: 0x070c18, roughness: 0.2, metalness: 0.8 });
         const halfA = arenaSize / 2;
         const walls = [
@@ -453,7 +540,7 @@
             scene.add(wall);
         });
 
-        // Arena Cover Crates
+        // Cover Crates
         const obstacles = [];
         const crateMat = new THREE.MeshStandardMaterial({ color: 0x101a2e, roughness: 0.3, metalness: 0.7 });
         const glowEdgeMat = new THREE.MeshStandardMaterial({ color: 0x00f0ff, emissive: 0x00f0ff, emissiveIntensity: 0.8 });
@@ -491,11 +578,11 @@
         createCrate(20, 0, 3, 3, 8);
 
         /* =========================================================================
-         *  WEAPON VIEWMODEL (CYBER SWORD)
+         *  WEAPON VIEWMODEL & VISUAL SLASH MESH
          * ========================================================================= */
         const weaponGroup = new THREE.Group();
 
-        // Hilt
+        // Sword Hilt
         const handle = new THREE.Mesh(
             new THREE.CylinderGeometry(0.022, 0.022, 0.32, 8),
             new THREE.MeshStandardMaterial({ color: 0x111111, metalness: 0.9 })
@@ -503,7 +590,7 @@
         handle.position.y = -0.14;
         weaponGroup.add(handle);
 
-        // Guard
+        // Sword Guard
         const guard = new THREE.Mesh(
             new THREE.BoxGeometry(0.18, 0.03, 0.07),
             new THREE.MeshStandardMaterial({ color: 0x222222, metalness: 0.8 })
@@ -511,7 +598,7 @@
         guard.position.y = 0.02;
         weaponGroup.add(guard);
 
-        // Energy Blade
+        // Cyber Energy Blade
         const blade = new THREE.Mesh(
             new THREE.BoxGeometry(0.038, 1.05, 0.015),
             new THREE.MeshStandardMaterial({
@@ -529,7 +616,7 @@
         camera.add(weaponGroup);
         scene.add(camera);
 
-        // Visual Slash Mesh Trail
+        // Slash Arc Mesh
         const slashGeo = new THREE.RingGeometry(0.25, 1.1, 16, 1, 0, Math.PI * 0.65);
         const slashMat = new THREE.MeshBasicMaterial({
             color: 0x00f0ff,
@@ -543,20 +630,35 @@
         camera.add(slashMesh);
 
         /* =========================================================================
-         *  PARTICLE SYSTEM
+         *  SHOCKWAVE 3D MESH (For 'E' Special Ability)
+         * ========================================================================= */
+        const shockwaveRingGeo = new THREE.TorusGeometry(0.6, 0.18, 12, 32);
+        shockwaveRingGeo.rotateX(Math.PI / 2);
+        const shockwaveRingMat = new THREE.MeshStandardMaterial({
+            color: 0x00f0ff,
+            emissive: 0x00f0ff,
+            emissiveIntensity: 2.5,
+            transparent: true,
+            opacity: 0
+        });
+        const shockwaveMesh = new THREE.Mesh(shockwaveRingGeo, shockwaveRingMat);
+        scene.add(shockwaveMesh);
+
+        /* =========================================================================
+         *  PARTICLE SYSTEM & FLOATING DAMAGE TEXTS
          * ========================================================================= */
         const particles = [];
         const particleGeo = new THREE.SphereGeometry(0.05, 6, 6);
 
-        function createSparkBurst(pos, count = 10, colorHex = 0x00f0ff) {
+        function createSparkBurst(pos, count = 12, colorHex = 0x00f0ff) {
             const mat = new THREE.MeshBasicMaterial({ color: colorHex });
             for (let i = 0; i < count; i++) {
                 const mesh = new THREE.Mesh(particleGeo, mat);
                 mesh.position.copy(pos);
                 const vel = new THREE.Vector3(
-                    (Math.random() - 0.5) * 7,
-                    Math.random() * 5 + 1.5,
-                    (Math.random() - 0.5) * 7
+                    (Math.random() - 0.5) * 8,
+                    Math.random() * 5 + 2.0,
+                    (Math.random() - 0.5) * 8
                 );
                 particles.push({ mesh, vel, life: 1.0 });
                 scene.add(mesh);
@@ -573,23 +675,81 @@
                     p.mesh.material.dispose();
                     particles.splice(i, 1);
                 } else {
-                    p.vel.y -= delta * 14;
+                    p.vel.y -= delta * 15;
                     p.mesh.position.addScaledVector(p.vel, delta);
                     p.mesh.scale.setScalar(p.life);
                 }
             }
         }
 
+        // Floating Damage Text System
+        const floatingTexts = [];
+
+        function spawnDamageText(pos, amount, isCritical = false) {
+            const el = document.createElement('div');
+            el.className = `absolute pointer-events-none font-orbitron font-black text-lg sm:text-2xl transition-all duration-500 ease-out z-30 ${
+                isCritical ? 'text-yellow-300 drop-shadow-[0_0_12px_rgba(255,215,0,0.9)] scale-125' : 'text-cyan-300 drop-shadow-[0_0_8px_rgba(0,240,255,0.8)]'
+            }`;
+            el.innerText = `-${amount}`;
+            document.body.appendChild(el);
+
+            floatingTexts.push({
+                el,
+                pos: pos.clone().add(new THREE.Vector3((Math.random() - 0.5) * 0.5, 0.8, (Math.random() - 0.5) * 0.5)),
+                life: 1.0
+            });
+        }
+
+        function updateFloatingTexts(delta) {
+            for (let i = floatingTexts.length - 1; i >= 0; i--) {
+                const item = floatingTexts[i];
+                item.life -= delta * 1.6;
+                item.pos.y += delta * 1.8;
+
+                if (item.life <= 0) {
+                    item.el.remove();
+                    floatingTexts.splice(i, 1);
+                    continue;
+                }
+
+                const vector = item.pos.clone().project(camera);
+                const x = (vector.x * 0.5 + 0.5) * window.innerWidth;
+                const y = (-(vector.y * 0.5) + 0.5) * window.innerHeight;
+
+                item.el.style.left = `${x}px`;
+                item.el.style.top = `${y}px`;
+                item.el.style.opacity = `${item.life}`;
+                item.el.style.transform = `translate(-50%, -100%) scale(${0.8 + (1 - item.life) * 0.4})`;
+            }
+        }
+
         /* =========================================================================
-         *  ENEMY BOT CLASS & SPAWNER
+         *  ENEMY BOT CLASS WITH 3D BILLBOARD HEALTH BARS
          * ========================================================================= */
         const enemies = [];
 
+        function createHealthBarSprite() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 128;
+            canvas.height = 20;
+            const ctx = canvas.getContext('2d');
+
+            const texture = new THREE.CanvasTexture(canvas);
+            const spriteMat = new THREE.SpriteMaterial({ map: texture, transparent: true });
+            const sprite = new THREE.Sprite(spriteMat);
+            sprite.scale.set(1.4, 0.22, 1);
+            sprite.position.set(0, 1.3, 0);
+
+            return { sprite, canvas, ctx, texture };
+        }
+
         class EnemyBot {
-            constructor(x, z) {
-                this.hp = 100;
-                this.speed = 4.0 + Math.random() * 1.5;
+            constructor(x, z, healthScale = 1.0) {
+                this.hp = Math.floor(100 * healthScale);
+                this.maxHp = this.hp;
+                this.speed = 3.8 + Math.random() * 1.4;
                 this.attackCooldown = 0;
+                this.knockbackVel = new THREE.Vector3();
 
                 this.mesh = new THREE.Group();
                 this.mesh.position.set(x, 1.2, z);
@@ -599,7 +759,7 @@
                     roughness: 0.3,
                     metalness: 0.8,
                     emissive: 0xff0055,
-                    emissiveIntensity: 0.5
+                    emissiveIntensity: 0.55
                 });
                 this.body = new THREE.Mesh(new THREE.OctahedronGeometry(0.85, 2), bodyMat);
                 this.body.castShadow = true;
@@ -619,14 +779,43 @@
                 this.ring.rotation.x = Math.PI / 2;
                 this.mesh.add(this.ring);
 
+                // Billboard Health Bar Component
+                this.hpBar = createHealthBarSprite();
+                this.mesh.add(this.hpBar.sprite);
+                this.updateHealthBarUI();
+
                 scene.add(this.mesh);
+            }
+
+            updateHealthBarUI() {
+                const ctx = this.hpBar.ctx;
+                const pct = Math.max(0, this.hp / this.maxHp);
+
+                ctx.clearRect(0, 0, 128, 20);
+                ctx.fillStyle = 'rgba(10, 10, 20, 0.85)';
+                ctx.fillRect(0, 0, 128, 20);
+                ctx.strokeStyle = '#00f0ff';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(1, 1, 126, 18);
+
+                ctx.fillStyle = pct > 0.35 ? '#00f0ff' : '#ff0055';
+                ctx.fillRect(3, 3, Math.floor(122 * pct), 14);
+
+                this.hpBar.texture.needsUpdate = true;
             }
 
             update(delta, playerPos) {
                 if (this.hp <= 0) return;
 
+                // Floating oscillation
                 this.mesh.position.y = 1.2 + Math.sin(Date.now() * 0.004 + this.mesh.id) * 0.18;
                 this.ring.rotation.z += delta * 2;
+
+                // Apply Knockback Physics Decay
+                if (this.knockbackVel.lengthSq() > 0.01) {
+                    this.mesh.position.addScaledVector(this.knockbackVel, delta);
+                    this.knockbackVel.multiplyScalar(Math.max(0, 1 - delta * 6.5));
+                }
 
                 const dir = new THREE.Vector3().subVectors(playerPos, this.mesh.position);
                 dir.y = 0;
@@ -659,10 +848,11 @@
                 if (this.attackCooldown > 0) this.attackCooldown -= delta;
             }
 
-            takeDamage(amount, pushDir) {
+            takeDamage(amount, pushDir, kbStrength = 1.2) {
                 this.hp -= amount;
-                this.mesh.position.addScaledVector(pushDir, 1.1);
-                createSparkBurst(this.mesh.position, 14, 0xff0055);
+                this.knockbackVel.addScaledVector(pushDir, kbStrength * 7.5);
+                createSparkBurst(this.mesh.position, 12, 0xff0055);
+                this.updateHealthBarUI();
 
                 if (this.hp <= 0) {
                     this.destroy();
@@ -672,24 +862,60 @@
             }
 
             destroy() {
-                createSparkBurst(this.mesh.position, 25, 0xff0055);
+                createSparkBurst(this.mesh.position, 28, 0xff0055);
                 audio.playEnemyDeath();
                 scene.remove(this.mesh);
             }
         }
 
+        /* =========================================================================
+         *  WAVE MANAGEMENT SYSTEM
+         * ========================================================================= */
+        let waveNumber = 1;
+
+        function triggerWaveBanner(text, subtext) {
+            const banner = document.getElementById('wave-banner');
+            const title = document.getElementById('wave-banner-title');
+            const sub = document.getElementById('wave-banner-sub');
+
+            title.innerText = text;
+            sub.innerText = subtext;
+
+            banner.classList.remove('hidden', 'wave-banner-anim');
+            void banner.offsetWidth; // Force Reflow
+            banner.classList.add('wave-banner-anim');
+
+            setTimeout(() => {
+                banner.classList.add('hidden');
+            }, 2200);
+        }
+
         function spawnEnemyWave() {
-            const count = 3 + Math.floor(gameState.kills / 3);
+            const count = 3 + (waveNumber - 1) * 2;
+            const healthScale = 1.0 + (waveNumber - 1) * 0.18;
+
+            triggerWaveBanner(`WAVE ${waveNumber}`, `ELIMINATE ${count} HOSTILE UNITS`);
+
             for (let i = 0; i < count; i++) {
-                const angle = Math.random() * Math.PI * 2;
-                const r = 30 + Math.random() * 10;
-                enemies.push(new EnemyBot(Math.cos(angle) * r, Math.sin(angle) * r));
+                const angle = (i / count) * Math.PI * 2 + (Math.random() * 0.4);
+                const r = 28 + Math.random() * 10;
+                enemies.push(new EnemyBot(Math.cos(angle) * r, Math.sin(angle) * r, healthScale));
             }
+
+            document.getElementById('wave-val').innerText = waveNumber;
             updateEnemyCounter();
         }
 
+        function checkWaveProgression() {
+            if (enemies.length === 0 && gameState.active) {
+                gameState.score += 300 * waveNumber;
+                waveNumber++;
+                setTimeout(spawnEnemyWave, 1200);
+            }
+        }
+
         /* =========================================================================
-         *  ROBUST CAMERA & CONTROL SYSTEM (Pointer Lock + Drag Fallback)
+         *  ROBUST PLAYER & CAMERA CONTROLS (YXZ Strict Clamped Look)
          * ========================================================================= */
         const player = {
             hp: 100, maxHp: 100,
@@ -703,12 +929,20 @@
             sensitivity: 0.0022
         };
 
+        const abilityState = {
+            cooldownTimer: 0,
+            cooldownMax: 6.0,
+            shockwaveActive: false,
+            shockwaveRadius: 0
+        };
+
         const keys = {};
         let isPointerLocked = false;
         let isMouseDown = false;
         let lastMouseX = 0, lastMouseY = 0;
+        let cameraShakeTime = 0;
 
-        // Sync Sensitivity Sliders
+        // Sensitivity Sliders Sync
         const menuSensSlider = document.getElementById('menu-sens-slider');
         const hudSensSlider = document.getElementById('hud-sens-slider');
         const sensDisplay = document.getElementById('sens-val-display');
@@ -723,31 +957,34 @@
         menuSensSlider.addEventListener('input', (e) => setSensitivity(e.target.value));
         hudSensSlider.addEventListener('input', (e) => setSensitivity(e.target.value));
 
-        // Key Listeners
-        window.addEventListener('keydown', (e) => keys[e.code] = true);
+        // Keyboard Listeners
+        window.addEventListener('keydown', (e) => {
+            keys[e.code] = true;
+            if (e.code === 'KeyE') {
+                triggerShockwave();
+            }
+        });
+
         window.addEventListener('keyup', (e) => keys[e.code] = false);
 
-        // Core Camera Rotation Logic (Strictly Clamped)
+        // ROTATION CONTROL (STRICT PITCH CLAMP BETWEEN -85° and +85°)
         function rotateCamera(deltaX, deltaY) {
             player.yaw -= deltaX * player.sensitivity;
             player.pitch -= deltaY * player.sensitivity;
 
-            // STRICT CLAMP (-85 degrees to +85 degrees in radians)
             const maxPitch = (85 * Math.PI) / 180;
             player.pitch = Math.max(-maxPitch, Math.min(maxPitch, player.pitch));
 
-            // Apply rotations in YXZ order
             camera.rotation.y = player.yaw;
             camera.rotation.x = player.pitch;
             camera.rotation.z = 0;
         }
 
-        // Pointer Lock Mouse Move
+        // Mouse Look Handlers
         document.addEventListener('mousemove', (e) => {
             if (isPointerLocked) {
                 rotateCamera(e.movementX, e.movementY);
             } else if (isMouseDown && gameState.active) {
-                // Drag-to-look Fallback for preview frames
                 const deltaX = e.clientX - lastMouseX;
                 const deltaY = e.clientY - lastMouseY;
                 lastMouseX = e.clientX;
@@ -756,7 +993,6 @@
             }
         });
 
-        // Mouse Down for Attacks & Drag Fallback
         container.addEventListener('mousedown', (e) => {
             if (e.button === 0 && gameState.active) {
                 isMouseDown = true;
@@ -769,12 +1005,10 @@
             }
         });
 
-        window.addEventListener('mouseup', () => {
-            isMouseDown = false;
-        });
+        window.addEventListener('mouseup', () => isMouseDown = false);
 
         /* =========================================================================
-         *  M1 SWORD ATTACK MECHANIC
+         *  ATTACK & SPECIAL ABILITY MECHANICS
          * ========================================================================= */
         let isAttacking = false;
         let attackTimer = 0;
@@ -785,16 +1019,12 @@
             attackTimer = attackDuration;
             audio.playSwing();
 
-            // Expand crosshair visually
-            const ch = document.getElementById('crosshair');
-            ch.classList.add('expanded');
-
+            document.getElementById('crosshair').classList.add('expanded');
             slashMat.opacity = 0.95;
             slashMesh.scale.set(0.4, 0.4, 0.4);
 
-            // Forward Raycast for weapon hit detection
             const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
-            const attackRange = 4.2;
+            const attackRange = 4.3;
 
             for (let i = enemies.length - 1; i >= 0; i--) {
                 const enemy = enemies[i];
@@ -804,28 +1034,80 @@
                     const toEnemy = new THREE.Vector3().subVectors(enemy.mesh.position, camera.position).normalize();
                     const dot = forward.dot(toEnemy);
 
-                    if (dot > 0.6) { // In front arc
+                    if (dot > 0.58) { // Forward hit cone
                         audio.playHit();
                         showHitMarker();
 
-                        const died = enemy.takeDamage(55, forward);
+                        const dmg = 55 + Math.floor(Math.random() * 10);
+                        spawnDamageText(enemy.mesh.position, dmg);
+
+                        const died = enemy.takeDamage(dmg, forward, 1.2);
                         if (died) {
                             enemies.splice(i, 1);
                             gameState.kills++;
                             gameState.score += 150;
                             showKillFeed("HOSTILE SLAIN +150");
                             updateEnemyCounter();
-
-                            if (enemies.length === 0) {
-                                setTimeout(spawnEnemyWave, 800);
-                            }
+                            checkWaveProgression();
                         }
                     }
                 }
             }
         }
 
+        // SPECIAL ABILITY ('E' KEY) CYBER SHOCKWAVE SLAM
+        function triggerShockwave() {
+            if (abilityState.cooldownTimer > 0 || !gameState.active) return;
+
+            abilityState.cooldownTimer = abilityState.cooldownMax;
+            audio.playShockwave();
+
+            // Setup shockwave visual mesh
+            shockwaveMesh.position.copy(player.pos);
+            shockwaveMesh.position.y = 0.15;
+            shockwaveMesh.scale.set(1, 1, 1);
+            shockwaveRingMat.opacity = 1.0;
+            abilityState.shockwaveActive = true;
+            abilityState.shockwaveRadius = 1.0;
+
+            // Small forward impulse dash
+            const forwardX = -Math.sin(player.yaw);
+            const forwardZ = -Math.cos(player.yaw);
+            player.vel.x += forwardX * 12.0;
+            player.vel.z += forwardZ * 12.0;
+
+            cameraShakeTime = 0.35;
+            createSparkBurst(player.pos, 35, 0x00f0ff);
+
+            // AOE Damage & Massive Knockback
+            const shockwaveRange = 11.0;
+            for (let i = enemies.length - 1; i >= 0; i--) {
+                const enemy = enemies[i];
+                const dist = player.pos.distanceTo(enemy.mesh.position);
+
+                if (dist <= shockwaveRange) {
+                    const kbDir = new THREE.Vector3().subVectors(enemy.mesh.position, player.pos);
+                    kbDir.y = 0;
+                    kbDir.normalize();
+
+                    const dmg = 120;
+                    spawnDamageText(enemy.mesh.position, dmg, true);
+
+                    const died = enemy.takeDamage(dmg, kbDir, 3.8);
+                    if (died) {
+                        enemies.splice(i, 1);
+                        gameState.kills++;
+                        gameState.score += 250;
+                        showKillFeed("SHOCKWAVE OBLITERATION +250");
+                        updateEnemyCounter();
+                        checkWaveProgression();
+                    }
+                }
+            }
+        }
+
         function updateWeaponAnimation(delta) {
+            // Weapon M1 Slash Animation
             if (isAttacking) {
                 attackTimer -= delta;
                 const progress = 1 - (attackTimer / attackDuration);
@@ -852,10 +1134,28 @@
                     document.getElementById('crosshair').classList.remove('expanded');
                 }
             } else {
-                // Idle Bobbing
+                // Idle Breathing Bob
                 const time = Date.now() * 0.003;
                 weaponGroup.position.y = -0.28 + Math.sin(time) * 0.01;
                 weaponGroup.position.x = 0.32 + Math.cos(time * 0.5) * 0.006;
+            }
+
+            // Shockwave Mesh Expansion Animation
+            if (abilityState.shockwaveActive) {
+                abilityState.shockwaveRadius += delta * 32.0;
+                shockwaveMesh.scale.set(abilityState.shockwaveRadius, 1, abilityState.shockwaveRadius);
+                shockwaveRingMat.opacity -= delta * 2.2;
+
+                if (shockwaveRingMat.opacity <= 0) {
+                    abilityState.shockwaveActive = false;
+                    shockwaveRingMat.opacity = 0;
+                }
+            }
+
+            // Shockwave Ability Cooldown Tick
+            if (abilityState.cooldownTimer > 0) {
+                abilityState.cooldownTimer = Math.max(0, abilityState.cooldownTimer - delta);
+                updateAbilityHUD();
             }
         }
 
@@ -867,7 +1167,7 @@
 
             // Sprinting & Stamina
             player.isSprinting = keys['ShiftLeft'] && player.stamina > 5 && (keys['KeyW'] || keys['KeyS'] || keys['KeyA'] || keys['KeyD']);
-            const speed = player.isSprinting ? 11.5 : 6.2;
+            const speed = player.isSprinting ? 11.8 : 6.4;
 
             if (player.isSprinting) {
                 player.stamina = Math.max(0, player.stamina - delta * 35);
@@ -875,7 +1175,7 @@
                 player.stamina = Math.min(player.maxStamina, player.stamina + delta * 25);
             }
 
-            // PURE XZ GROUND MOVEMENT VECTORS (Ignore Pitch entirely!)
+            // FLAT GROUND MOVEMENT VECTORS (Pitch Angle Excluded!)
             const forwardX = -Math.sin(player.yaw);
             const forwardZ = -Math.cos(player.yaw);
             const rightX = Math.cos(player.yaw);
@@ -889,7 +1189,6 @@
             if (keys['KeyD'] || keys['ArrowRight']) { moveX += rightX; moveZ += rightZ; }
             if (keys['KeyA'] || keys['ArrowLeft']) { moveX -= rightX; moveZ -= rightZ; }
 
-            // Normalize diagonal speed
             const len = Math.hypot(moveX, moveZ);
             if (len > 0) {
                 moveX /= len;
@@ -901,7 +1200,7 @@
 
             // Jump Physics
             if (keys['Space'] && player.isGrounded) {
-                player.vel.y = 7.2;
+                player.vel.y = 7.4;
                 player.isGrounded = false;
                 audio.playJump();
             }
@@ -910,15 +1209,15 @@
                 player.vel.y -= 22.0 * delta; // Gravity
             }
 
-            // Proposed Next Position
+            // Proposed Position Movement
             const nextPos = player.pos.clone().addScaledVector(player.vel, delta);
 
-            // Perimeter Wall Collisions
+            // Arena Perimeter Collisions
             const bound = arenaSize / 2 - 1.2;
             nextPos.x = Math.max(-bound, Math.min(bound, nextPos.x));
             nextPos.z = Math.max(-bound, Math.min(bound, nextPos.z));
 
-            // Obstacle Crate Collisions
+            // Obstacle Cover Collisions
             for (const obs of obstacles) {
                 if (nextPos.x > obs.minX && nextPos.x < obs.maxX && nextPos.z > obs.minZ && nextPos.z < obs.maxZ) {
                     nextPos.x = player.pos.x;
@@ -937,11 +1236,18 @@
             player.pos.copy(nextPos);
             camera.position.copy(player.pos);
 
+            // Screen Shake Effect
+            if (cameraShakeTime > 0) {
+                cameraShakeTime -= delta;
+                camera.position.x += (Math.random() - 0.5) * 0.15;
+                camera.position.y += (Math.random() - 0.5) * 0.15;
+            }
+
             updateHUD();
         }
 
         /* =========================================================================
-         *  STATE MANAGEMENT & HUD
+         *  STATE MANAGEMENT & HUD OVERLAYS
          * ========================================================================= */
         const gameState = { active: false, score: 0, kills: 0 };
 
@@ -966,14 +1272,37 @@
         function showKillFeed(text) {
             const container = document.getElementById('kill-feed-container');
             const item = document.createElement('div');
-            item.className = 'kill-feed-anim text-pink-500 font-orbitron font-black text-sm sm:text-base tracking-wider drop-shadow-[0_0_8px_rgba(255,0,85,0.8)] mb-1';
+            item.className = 'kill-feed-anim text-pink-400 font-orbitron font-black text-sm sm:text-base tracking-wider drop-shadow-[0_0_8px_rgba(255,0,85,0.8)] mb-1';
             item.innerText = text;
             container.appendChild(item);
-            setTimeout(() => item.remove(), 1200);
+            setTimeout(() => item.remove(), 1250);
         }
 
         function updateEnemyCounter() {
             document.getElementById('enemies-val').innerText = enemies.length;
+        }
+
+        function updateAbilityHUD() {
+            const card = document.getElementById('ability-card');
+            const status = document.getElementById('ability-status');
+            const bar = document.getElementById('ability-bar');
+            const ring = document.getElementById('ability-cooldown-ring');
+
+            if (abilityState.cooldownTimer <= 0) {
+                status.innerText = "READY";
+                status.className = "text-xs font-orbitron font-bold text-cyan-300 tracking-wide";
+                bar.style.width = "100%";
+                ring.style.clipPath = "inset(0 0 100% 0)";
+                card.classList.add('ability-glow-ready');
+            } else {
+                const remaining = abilityState.cooldownTimer.toFixed(1);
+                const pct = 1 - (abilityState.cooldownTimer / abilityState.cooldownMax);
+                status.innerText = `${remaining}s`;
+                status.className = "text-xs font-orbitron font-bold text-pink-500 tracking-wide";
+                bar.style.width = `${pct * 100}%`;
+                ring.style.clipPath = `inset(0 0 ${pct * 100}% 0)`;
+                card.classList.remove('ability-glow-ready');
+            }
         }
 
         function updateHUD() {
@@ -990,6 +1319,7 @@
             if (document.pointerLockElement) document.exitPointerLock();
             document.getElementById('final-score').innerText = gameState.score;
             document.getElementById('final-kills').innerText = gameState.kills;
+            document.getElementById('final-wave').innerText = waveNumber;
             document.getElementById('game-over-overlay').classList.remove('hidden');
             document.getElementById('hud').classList.add('hidden');
         }
@@ -1005,18 +1335,21 @@
             player.pitch = 0;
             camera.rotation.set(0, 0, 0);
 
+            waveNumber = 1;
             gameState.score = 0;
             gameState.kills = 0;
             gameState.active = true;
+            abilityState.cooldownTimer = 0;
 
             updateHUD();
+            updateAbilityHUD();
             document.getElementById('game-over-overlay').classList.add('hidden');
             document.getElementById('hud').classList.remove('hidden');
             spawnEnemyWave();
         }
 
         /* =========================================================================
-         *  POINTER LOCK & OVERLAY HANDLERS
+         *  POINTER LOCK & EVENT HANDLERS
          * ========================================================================= */
         const startOverlay = document.getElementById('start-overlay');
         const playBtn = document.getElementById('play-btn');
@@ -1027,7 +1360,7 @@
             try {
                 document.body.requestPointerLock();
             } catch (err) {
-                console.log("Pointer lock fallback active.");
+                console.log("Pointer lock fallback mode engaged.");
             }
         }
 
@@ -1059,7 +1392,7 @@
         });
 
         /* =========================================================================
-         *  MAIN ANIMATION LOOP
+         *  MAIN ANIMATION & RENDER LOOP
          * ========================================================================= */
         let lastTime = performance.now();
 
@@ -1074,6 +1407,7 @@
                 updatePlayerMovement(delta);
                 updateWeaponAnimation(delta);
                 updateParticles(delta);
+                updateFloatingTexts(delta);
 
                 for (let i = 0; i < enemies.length; i++) {
                     enemies[i].update(delta, player.pos);
