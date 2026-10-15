@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Battlegrounds Game</title>
+    <style>
+        body { margin: 0; overflow: hidden; background: #111; }
+        #ui {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: white;
+            font-family: Arial, sans-serif;
+            font-size: 18px;
+            pointer-events: none;
+        }
+    </style>
+    <!-- Three.js Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body>
+    <div id="ui">
+        <div>Health: <span id="hp">100</span></div>
+        <div>Score: <span id="score">0</span></div>
+    </div>
+
+    <script>
+        // --- 1. Scene & Camera Setup ---
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x1a1a2e);
+
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        // Lighting
+        const light = new THREE.DirectionalLight(0xffffff, 1);
+        light.position.set(10, 20, 15);
+        scene.add(light);
+        scene.add(new THREE.AmbientLight(0x404040));
+
+        // --- 2. Battleground Arena Ground ---
+        const arenaSize = 50;
+        const groundGeometry = new THREE.PlaneGeometry(arenaSize, arenaSize);
+        const groundMaterial = new THREE.MeshLambertMaterial({ color: 0x16213e });
+        const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+        ground.rotation.x = -Math.PI / 2;
+        scene.add(ground);
+
+        // Grid overlay
+        const grid = new THREE.GridHelper(arenaSize, 20, 0x00fff5, 0x0f3460);
+        grid.position.y = 0.01;
+        scene.add(grid);
+
+        // --- 3. Player Creation ---
+        const playerGeo = new THREE.BoxGeometry(1, 2, 1);
+        const playerMat = new THREE.MeshLambertMaterial({ color: 0x00fff5 });
+        const player = new THREE.Mesh(playerGeo, playerMat);
+        player.position.y = 1;
+        scene.add(player);
+
+        // Movement Controls
+        const keys = {};
+        window.addEventListener('keydown', (e) => keys[e.key.toLowerCase()] = true);
+        window.addEventListener('keyup', (e) => keys[e.key.toLowerCase()] = false);
+
+        // --- 4. Game Loop ---
+        const speed = 0.15;
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // Player Movement (WASD)
+            if (keys['w'] || keys['arrowup']) player.position.z -= speed;
+            if (keys['s'] || keys['arrowdown']) player.position.z += speed;
+            if (keys['a'] || keys['arrowleft']) player.position.x -= speed;
+            if (keys['d'] || keys['arrowright']) player.position.x += speed;
+
+            // Constrain Player inside Arena Bounds
+            const halfArena = arenaSize / 2 - 1;
+            player.position.x = Math.max(-halfArena, Math.min(halfArena, player.position.x));
+            player.position.z = Math.max(-halfArena, Math.min(halfArena, player.position.z));
+
+            // Camera follow player
+            camera.position.x = player.position.x;
+            camera.position.y = player.position.y + 12;
+            camera.position.z = player.position.z + 14;
+            camera.lookAt(player.position);
+
+            renderer.render(scene, camera);
+        }
+
+        animate();
+
+        // Responsive Window Resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>
