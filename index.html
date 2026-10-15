@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>3D FPS Cyber Battlegrounds</title>
-    <!-- Tailwind CSS for Responsive UI -->
+    <title>3D FPS Cyber Battlegrounds - Sunlit Arena Edition</title>
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Three.js WebGL Engine -->
+    <!-- Three.js Engine -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@500;700;900&display=swap');
@@ -34,11 +34,11 @@
 
         /* Glassmorphism Sci-Fi Panels */
         .glass-panel {
-            background: rgba(8, 14, 28, 0.85);
+            background: rgba(8, 16, 32, 0.85);
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(0, 240, 255, 0.3);
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.7);
+            border: 1px solid rgba(0, 240, 255, 0.35);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.6);
         }
 
         /* Dynamic Crosshair Animations */
@@ -48,15 +48,15 @@
             transition: transform 0.06s ease-out;
         }
 
-        #crosshair.expanded .crosshair-top { transform: translateY(-8px); }
-        #crosshair.expanded .crosshair-bottom { transform: translateY(8px); }
-        #crosshair.expanded .crosshair-left { transform: translateX(-8px); }
-        #crosshair.expanded .crosshair-right { transform: translateX(8px); }
+        #crosshair.expanded .crosshair-top { transform: translateY(-10px); }
+        #crosshair.expanded .crosshair-bottom { transform: translateY(10px); }
+        #crosshair.expanded .crosshair-left { transform: translateX(-10px); }
+        #crosshair.expanded .crosshair-right { transform: translateX(10px); }
 
         /* Hit Marker Flash */
         #hit-marker {
             opacity: 0;
-            transition: opacity 0.1s ease-out;
+            transition: opacity 0.08s ease-out;
             pointer-events: none;
         }
 
@@ -64,29 +64,29 @@
             opacity: 1;
         }
 
-        /* Glows */
+        /* Glow Effects */
         .bar-glow-hp { box-shadow: 0 0 12px rgba(255, 42, 109, 0.85); }
         .bar-glow-stamina { box-shadow: 0 0 12px rgba(0, 240, 255, 0.85); }
-        .ability-glow-ready { box-shadow: 0 0 18px rgba(0, 240, 255, 0.85); }
+        .ability-glow-ready { box-shadow: 0 0 20px rgba(0, 240, 255, 0.85); }
 
-        /* Damage Vignette Screen Flash */
+        /* Screen Damage Vignette Flash */
         #damage-vignette {
             pointer-events: none;
             opacity: 0;
-            transition: opacity 0.18s ease;
-            background: radial-gradient(circle, rgba(255,0,0,0) 35%, rgba(255, 0, 60, 0.75) 100%);
+            transition: opacity 0.15s ease;
+            background: radial-gradient(circle, rgba(255,0,0,0) 35%, rgba(255, 0, 60, 0.8) 100%);
         }
 
-        /* Kill feed popups */
-        @keyframes fadeUp {
-            0% { opacity: 0; transform: translate(-50%, 12px) scale(0.9); }
-            18% { opacity: 1; transform: translate(-50%, 0) scale(1.1); }
-            80% { opacity: 1; transform: translate(-50%, 0) scale(1); }
-            100% { opacity: 0; transform: translate(-50%, -20px) scale(0.95); }
+        /* Combo Popup Animation */
+        @keyframes comboPop {
+            0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5) rotate(-5deg); }
+            30% { opacity: 1; transform: translate(-50%, -50%) scale(1.25) rotate(0deg); }
+            80% { opacity: 1; transform: translate(-50%, -50%) scale(1.0); }
+            100% { opacity: 0; transform: translate(-50%, -70%) scale(0.9); }
         }
 
-        .kill-feed-anim {
-            animation: fadeUp 1.25s forwards ease-out;
+        .combo-anim {
+            animation: comboPop 0.85s forwards cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
 
         /* Wave Banner Announcement */
@@ -100,6 +100,18 @@
         .wave-banner-anim {
             animation: waveBannerAnim 2.2s forwards ease-in-out;
         }
+
+        /* Kill Feed Animations */
+        @keyframes fadeUp {
+            0% { opacity: 0; transform: translate(-50%, 12px) scale(0.9); }
+            18% { opacity: 1; transform: translate(-50%, 0) scale(1.1); }
+            80% { opacity: 1; transform: translate(-50%, 0) scale(1); }
+            100% { opacity: 0; transform: translate(-50%, -20px) scale(0.95); }
+        }
+
+        .kill-feed-anim {
+            animation: fadeUp 1.35s forwards ease-out;
+        }
     </style>
 </head>
 <body class="bg-black text-white antialiased select-none">
@@ -110,12 +122,19 @@
     <!-- Red Damage Flash Vignette -->
     <div id="damage-vignette" class="absolute inset-0 w-full h-full z-10"></div>
 
+    <!-- Live Combo Counter Text Overlay -->
+    <div id="combo-popup" class="absolute top-1/2 left-1/2 z-20 pointer-events-none hidden text-center">
+        <h3 id="combo-popup-text" class="text-3xl sm:text-5xl font-orbitron font-black italic tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-pink-500 to-cyan-400 drop-shadow-[0_0_20px_rgba(255,215,0,0.9)]">
+            3-HIT FINISHER!
+        </h3>
+    </div>
+
     <!-- Wave Announcement Overlay -->
     <div id="wave-banner" class="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 pointer-events-none hidden text-center">
-        <h2 id="wave-banner-title" class="text-4xl sm:text-6xl font-orbitron font-black tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-teal-200 to-pink-500 drop-shadow-[0_0_20px_rgba(0,240,255,0.8)]">
+        <h2 id="wave-banner-title" class="text-4xl sm:text-6xl font-orbitron font-black tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-teal-200 to-pink-500 drop-shadow-[0_0_25px_rgba(0,240,255,0.9)]">
             WAVE 1
         </h2>
-        <p id="wave-banner-sub" class="text-sm sm:text-lg text-cyan-300 font-bold uppercase tracking-widest mt-2">PREPARE FOR HOSTILES</p>
+        <p id="wave-banner-sub" class="text-sm sm:text-lg text-cyan-300 font-bold uppercase tracking-widest mt-2">PREPARE FOR HOSTILE WAVE</p>
     </div>
 
     <!-- HUD Overlay -->
@@ -149,7 +168,7 @@
                 </div>
             </div>
 
-            <!-- Mode & Sensitivity Indicator -->
+            <!-- Mode & Sensitivity Controls -->
             <div class="glass-panel rounded-xl p-2.5 text-right text-xs text-gray-300 pointer-events-auto flex flex-col items-end space-y-1">
                 <div id="control-mode-tag" class="text-[9px] sm:text-[10px] uppercase font-bold text-cyan-400">Mode: Active</div>
                 <div class="flex items-center space-x-2">
@@ -162,9 +181,7 @@
         <!-- Center Crosshair & Hit Marker -->
         <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
             <div id="crosshair" class="relative w-8 h-8 flex items-center justify-center">
-                <!-- Center Dot -->
                 <div class="w-1.5 h-1.5 bg-cyan-400 rounded-full shadow-[0_0_8px_#00f0ff]"></div>
-                <!-- Reticle Lines -->
                 <div class="crosshair-line crosshair-left absolute w-2.5 h-0.5 left-0 top-1/2 -translate-y-1/2"></div>
                 <div class="crosshair-line crosshair-right absolute w-2.5 h-0.5 right-0 top-1/2 -translate-y-1/2"></div>
                 <div class="crosshair-line crosshair-top absolute h-2.5 w-0.5 top-0 left-1/2 -translate-x-1/2"></div>
@@ -211,26 +228,23 @@
                 </div>
             </div>
 
-            <!-- Right Side: Special Ability [E] & Attack Trigger Button -->
+            <!-- Right Side: M1 Attack Button & Ability Card -->
             <div class="flex items-center space-x-3 w-full sm:w-auto justify-between pointer-events-auto">
-                <!-- Direct Clickable M1 Action Button (Works on Touch/Screen Click) -->
                 <button id="hud-m1-btn" class="flex-1 sm:flex-none glass-panel p-2.5 px-4 rounded-xl border border-pink-500/50 flex items-center space-x-2 bg-pink-950/40 hover:bg-pink-900/60 active:scale-95 transition-all">
                     <span class="w-8 h-8 flex items-center justify-center bg-pink-500 text-black font-orbitron font-black text-xs rounded-lg shadow-[0_0_10px_rgba(255,0,85,0.8)]">M1</span>
                     <div class="text-left">
-                        <div class="text-[9px] font-bold text-pink-300 uppercase">PRIMARY ATTACK</div>
-                        <div class="text-xs font-orbitron font-bold text-white">CYBER SLASH</div>
+                        <div class="text-[9px] font-bold text-pink-300 uppercase">3-HIT COMBO</div>
+                        <div id="hud-combo-label" class="text-xs font-orbitron font-bold text-white">SLASH STRIKE</div>
                     </div>
                 </button>
 
-                <!-- Special Ability [E] Card -->
                 <button id="ability-card" class="flex-1 sm:flex-none glass-panel p-2.5 rounded-xl border border-cyan-500/40 flex items-center space-x-3 ability-glow-ready hover:bg-cyan-950/40 active:scale-95 transition-all text-left">
                     <div class="relative w-9 h-9 flex items-center justify-center bg-cyan-950/80 border border-cyan-400/50 rounded-lg">
                         <span class="font-orbitron font-black text-cyan-300 text-base">E</span>
-                        <!-- Circular overlay ring for cooldown -->
                         <div id="ability-cooldown-ring" class="absolute inset-0 rounded-lg bg-black/75 transition-all" style="clip-path: inset(0 0 0 0);"></div>
                     </div>
                     <div>
-                        <div class="text-[9px] uppercase font-bold text-gray-400 tracking-wider">SPECIAL SLAM</div>
+                        <div class="text-[9px] uppercase font-bold text-gray-400 tracking-wider">SHOCKWAVE SLAM</div>
                         <div id="ability-status" class="text-xs font-orbitron font-bold text-cyan-300 tracking-wide">READY</div>
                         <div class="w-24 h-1 bg-gray-900 rounded-full mt-1 overflow-hidden border border-cyan-500/20">
                             <div id="ability-bar" class="h-full bg-cyan-400 transition-all duration-100" style="width: 100%;"></div>
@@ -243,16 +257,15 @@
     </div>
 
     <!-- Start / Controls Screen Overlay -->
-    <div id="start-overlay" class="absolute inset-0 z-30 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md">
+    <div id="start-overlay" class="absolute inset-0 z-30 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
         <div class="glass-panel max-w-lg w-full rounded-2xl p-6 sm:p-8 text-center border-cyan-500/40 relative overflow-hidden">
-            <!-- Neon background glows -->
             <div class="absolute -top-12 -left-12 w-32 h-32 bg-cyan-500/20 rounded-full blur-3xl pointer-events-none"></div>
             <div class="absolute -bottom-12 -right-12 w-32 h-32 bg-pink-500/20 rounded-full blur-3xl pointer-events-none"></div>
 
             <h1 class="text-3xl sm:text-4xl font-orbitron font-black tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-teal-200 to-pink-500 mb-1">
                 CYBER BATTLEGROUNDS
             </h1>
-            <p class="text-gray-400 text-xs uppercase tracking-widest font-semibold mb-5">3D First-Person Melee Arena</p>
+            <p class="text-gray-400 text-xs uppercase tracking-widest font-semibold mb-5">Sunlit 200x200 Arena Melee combat</p>
 
             <!-- Sensitivity Adjustment Box -->
             <div class="bg-black/40 rounded-xl p-3 border border-white/10 mb-4 flex items-center justify-between text-xs">
@@ -266,33 +279,29 @@
             <!-- Keybind Guide -->
             <div class="space-y-2 text-left bg-black/50 rounded-xl p-4 border border-white/10 mb-6 text-xs sm:text-sm text-gray-300">
                 <div class="flex justify-between items-center border-b border-white/10 pb-1.5">
-                    <span class="text-gray-400">Attack / Cyber Slash:</span>
-                    <span class="text-pink-400 font-bold font-orbitron">Left Click (M1) or [M1] HUD</span>
+                    <span class="text-gray-400">3-Hit Blade Combo:</span>
+                    <span class="text-pink-400 font-bold font-orbitron">M1 Click (35 / 45 / 90 DMG)</span>
                 </div>
                 <div class="flex justify-between items-center border-b border-white/10 pb-1.5">
-                    <span class="text-gray-400">Shockwave Slam (AOE):</span>
-                    <span class="text-cyan-400 font-bold font-orbitron">Key [E] or [E] HUD Card</span>
+                    <span class="text-gray-400">Cyber Shockwave Slam:</span>
+                    <span class="text-cyan-400 font-bold font-orbitron">Key [E] (120 AOE DMG)</span>
                 </div>
                 <div class="flex justify-between items-center border-b border-white/10 pb-1.5">
-                    <span class="text-gray-400">Move (Flat Ground):</span>
-                    <span class="text-cyan-400 font-bold font-orbitron">W, A, S, D / Arrows</span>
+                    <span class="text-gray-400">Movement & Ramps:</span>
+                    <span class="text-cyan-400 font-bold font-orbitron">WASD / Arrow Keys</span>
                 </div>
                 <div class="flex justify-between items-center border-b border-white/10 pb-1.5">
-                    <span class="text-gray-400">Look Around:</span>
+                    <span class="text-gray-400">Camera Aiming:</span>
                     <span class="text-cyan-400 font-bold font-orbitron">Mouse Look / Drag</span>
                 </div>
-                <div class="flex justify-between items-center border-b border-white/10 pb-1.5">
-                    <span class="text-gray-400">Sprint:</span>
-                    <span class="text-cyan-400 font-bold font-orbitron">Shift Key</span>
-                </div>
                 <div class="flex justify-between items-center">
-                    <span class="text-gray-400">Jump:</span>
-                    <span class="text-cyan-400 font-bold font-orbitron">Spacebar</span>
+                    <span class="text-gray-400">Sprint & Jump:</span>
+                    <span class="text-cyan-400 font-bold font-orbitron">Shift (Sprint) / Space (Jump)</span>
                 </div>
             </div>
 
             <button id="play-btn" class="w-full py-4 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-black font-orbitron font-black tracking-widest rounded-xl shadow-[0_0_20px_rgba(0,240,255,0.4)] transform hover:scale-[1.02] active:scale-[0.98] transition-all duration-150 uppercase text-base sm:text-lg">
-                ENTER ARENA
+                ENTER SUNLIT ARENA
             </button>
         </div>
     </div>
@@ -326,7 +335,7 @@
 
     <script>
         /* =========================================================================
-         *  SYNTHESIZED AUDIO ENGINE (Web Audio API - Direct Web Audio Nodes)
+         *  SYNTHESIZED AUDIO ENGINE (Web Audio API)
          * ========================================================================= */
         class SoundEngine {
             constructor() { this.ctx = null; }
@@ -341,20 +350,47 @@
                 }
             }
 
-            playSwing() {
+            playSwingLight() {
                 if (!this.ctx) return;
                 const now = this.ctx.currentTime;
                 const osc = this.ctx.createOscillator();
                 const gain = this.ctx.createGain();
                 osc.type = 'sine';
-                osc.frequency.setValueAtTime(550, now);
-                osc.frequency.exponentialRampToValueAtTime(80, now + 0.16);
+                osc.frequency.setValueAtTime(650, now);
+                osc.frequency.exponentialRampToValueAtTime(160, now + 0.12);
                 gain.gain.setValueAtTime(0.35, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.12);
+                osc.connect(gain); gain.connect(this.ctx.destination);
+                osc.start(now); osc.stop(now + 0.12);
+            }
+
+            playSwingMedium() {
+                if (!this.ctx) return;
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(500, now);
+                osc.frequency.exponentialRampToValueAtTime(90, now + 0.16);
+                gain.gain.setValueAtTime(0.45, now);
                 gain.gain.exponentialRampToValueAtTime(0.01, now + 0.16);
-                osc.connect(gain);
-                gain.connect(this.ctx.destination);
-                osc.start(now);
-                osc.stop(now + 0.16);
+                osc.connect(gain); gain.connect(this.ctx.destination);
+                osc.start(now); osc.stop(now + 0.16);
+            }
+
+            playSwingHeavy() {
+                if (!this.ctx) return;
+                const now = this.ctx.currentTime;
+                // Sub Bass Heavy Punch
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(350, now);
+                osc.frequency.exponentialRampToValueAtTime(30, now + 0.28);
+                gain.gain.setValueAtTime(0.75, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.28);
+                osc.connect(gain); gain.connect(this.ctx.destination);
+                osc.start(now); osc.stop(now + 0.28);
             }
 
             playHit() {
@@ -363,44 +399,36 @@
                 const osc = this.ctx.createOscillator();
                 const gain = this.ctx.createGain();
                 osc.type = 'triangle';
-                osc.frequency.setValueAtTime(280, now);
-                osc.frequency.exponentialRampToValueAtTime(45, now + 0.12);
-                gain.gain.setValueAtTime(0.55, now);
-                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.12);
-                osc.connect(gain);
-                gain.connect(this.ctx.destination);
-                osc.start(now);
-                osc.stop(now + 0.12);
+                osc.frequency.setValueAtTime(320, now);
+                osc.frequency.exponentialRampToValueAtTime(40, now + 0.14);
+                gain.gain.setValueAtTime(0.6, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.14);
+                osc.connect(gain); gain.connect(this.ctx.destination);
+                osc.start(now); osc.stop(now + 0.14);
             }
 
             playShockwave() {
                 if (!this.ctx) return;
                 const now = this.ctx.currentTime;
-                // Sub Bass Boom
                 const osc1 = this.ctx.createOscillator();
                 const gain1 = this.ctx.createGain();
                 osc1.type = 'sawtooth';
-                osc1.frequency.setValueAtTime(200, now);
-                osc1.frequency.exponentialRampToValueAtTime(20, now + 0.55);
-                gain1.gain.setValueAtTime(0.7, now);
-                gain1.gain.exponentialRampToValueAtTime(0.01, now + 0.55);
-                osc1.connect(gain1);
-                gain1.connect(this.ctx.destination);
-                osc1.start(now);
-                osc1.stop(now + 0.55);
+                osc1.frequency.setValueAtTime(240, now);
+                osc1.frequency.exponentialRampToValueAtTime(20, now + 0.6);
+                gain1.gain.setValueAtTime(0.8, now);
+                gain1.gain.exponentialRampToValueAtTime(0.01, now + 0.6);
+                osc1.connect(gain1); gain1.connect(this.ctx.destination);
+                osc1.start(now); osc1.stop(now + 0.6);
 
-                // Cyber Sweep
                 const osc2 = this.ctx.createOscillator();
                 const gain2 = this.ctx.createGain();
                 osc2.type = 'sine';
-                osc2.frequency.setValueAtTime(140, now);
-                osc2.frequency.exponentialRampToValueAtTime(800, now + 0.3);
-                gain2.gain.setValueAtTime(0.4, now);
-                gain2.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
-                osc2.connect(gain2);
-                gain2.connect(this.ctx.destination);
-                osc2.start(now);
-                osc2.stop(now + 0.3);
+                osc2.frequency.setValueAtTime(180, now);
+                osc2.frequency.exponentialRampToValueAtTime(950, now + 0.35);
+                gain2.gain.setValueAtTime(0.45, now);
+                gain2.gain.exponentialRampToValueAtTime(0.01, now + 0.35);
+                osc2.connect(gain2); gain2.connect(this.ctx.destination);
+                osc2.start(now); osc2.stop(now + 0.35);
             }
 
             playJump() {
@@ -409,14 +437,12 @@
                 const osc = this.ctx.createOscillator();
                 const gain = this.ctx.createGain();
                 osc.type = 'sine';
-                osc.frequency.setValueAtTime(150, now);
-                osc.frequency.exponentialRampToValueAtTime(360, now + 0.14);
+                osc.frequency.setValueAtTime(160, now);
+                osc.frequency.exponentialRampToValueAtTime(420, now + 0.15);
                 gain.gain.setValueAtTime(0.25, now);
-                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.14);
-                osc.connect(gain);
-                gain.connect(this.ctx.destination);
-                osc.start(now);
-                osc.stop(now + 0.14);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+                osc.connect(gain); gain.connect(this.ctx.destination);
+                osc.start(now); osc.stop(now + 0.15);
             }
 
             playEnemyDeath() {
@@ -425,14 +451,12 @@
                 const osc = this.ctx.createOscillator();
                 const gain = this.ctx.createGain();
                 osc.type = 'sawtooth';
-                osc.frequency.setValueAtTime(180, now);
-                osc.frequency.exponentialRampToValueAtTime(25, now + 0.38);
-                gain.gain.setValueAtTime(0.5, now);
-                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.38);
-                osc.connect(gain);
-                gain.connect(this.ctx.destination);
-                osc.start(now);
-                osc.stop(now + 0.38);
+                osc.frequency.setValueAtTime(220, now);
+                osc.frequency.exponentialRampToValueAtTime(20, now + 0.4);
+                gain.gain.setValueAtTime(0.55, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+                osc.connect(gain); gain.connect(this.ctx.destination);
+                osc.start(now); osc.stop(now + 0.4);
             }
 
             playHurt() {
@@ -441,21 +465,19 @@
                 const osc = this.ctx.createOscillator();
                 const gain = this.ctx.createGain();
                 osc.type = 'square';
-                osc.frequency.setValueAtTime(160, now);
-                osc.frequency.linearRampToValueAtTime(40, now + 0.22);
-                gain.gain.setValueAtTime(0.4, now);
+                osc.frequency.setValueAtTime(180, now);
+                osc.frequency.linearRampToValueAtTime(35, now + 0.22);
+                gain.gain.setValueAtTime(0.45, now);
                 gain.gain.exponentialRampToValueAtTime(0.01, now + 0.22);
-                osc.connect(gain);
-                gain.connect(this.ctx.destination);
-                osc.start(now);
-                osc.stop(now + 0.22);
+                osc.connect(gain); gain.connect(this.ctx.destination);
+                osc.start(now); osc.stop(now + 0.22);
             }
         }
 
         const audio = new SoundEngine();
 
         /* =========================================================================
-         *  PROCEDURAL GRID TEXTURE GENERATOR
+         *  PROCEDURAL HIGH-TECH GRID TEXTURE
          * ========================================================================= */
         function createGridTexture() {
             const canvas = document.createElement('canvas');
@@ -463,45 +485,45 @@
             canvas.height = 512;
             const ctx = canvas.getContext('2d');
 
-            ctx.fillStyle = '#060a14';
+            ctx.fillStyle = '#0a101d';
             ctx.fillRect(0, 0, 512, 512);
 
-            ctx.strokeStyle = '#0e182e';
-            ctx.lineWidth = 6;
+            ctx.strokeStyle = '#1a2844';
+            ctx.lineWidth = 8;
             ctx.strokeRect(0, 0, 512, 512);
 
-            ctx.strokeStyle = 'rgba(0, 240, 255, 0.22)';
+            ctx.strokeStyle = 'rgba(0, 240, 255, 0.25)';
             ctx.lineWidth = 2;
             for (let i = 0; i < 512; i += 64) {
                 ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, 512); ctx.stroke();
                 ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(512, i); ctx.stroke();
             }
 
-            ctx.fillStyle = 'rgba(0, 240, 255, 0.4)';
-            ctx.fillRect(6, 6, 20, 20);
-            ctx.fillRect(486, 6, 20, 20);
-            ctx.fillRect(6, 486, 20, 20);
-            ctx.fillRect(486, 486, 20, 20);
+            ctx.fillStyle = 'rgba(0, 240, 255, 0.45)';
+            ctx.fillRect(6, 6, 24, 24);
+            ctx.fillRect(482, 6, 24, 24);
+            ctx.fillRect(6, 482, 24, 24);
+            ctx.fillRect(482, 482, 24, 24);
 
             const texture = new THREE.CanvasTexture(canvas);
             texture.wrapS = THREE.RepeatWrapping;
             texture.wrapT = THREE.RepeatWrapping;
-            texture.repeat.set(20, 20);
+            texture.repeat.set(40, 40);
             return texture;
         }
 
         /* =========================================================================
-         *  THREE.JS SCENE SETUP
+         *  THREE.JS SCENE SETUP & SUNLIT ATMOSPHERE
          * ========================================================================= */
         const container = document.getElementById('canvas-container');
         const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x030611);
-        scene.fog = new THREE.FogExp2(0x030611, 0.018);
+        
+        // Bright Atmospheric Sky background & fog
+        scene.background = new THREE.Color(0x87ceeb);
+        scene.fog = new THREE.FogExp2(0xa0e0ff, 0.007);
 
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        
-        // STRICT PITCH CLAMPING ROTATION ORDER FIX (YXZ PREVENTS PITCH ROLL/TWIST)
-        camera.rotation.order = 'YXZ';
+        camera.rotation.order = 'YXZ'; // Strict pitch clamping rotation order
 
         const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
         renderer.setSize(window.innerWidth, window.innerHeight);
@@ -510,31 +532,35 @@
         renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         container.appendChild(renderer.domElement);
 
-        // Lighting
-        const ambientLight = new THREE.AmbientLight(0x1a2638, 1.4);
+        // Sunlit Lighting Setup
+        const ambientLight = new THREE.AmbientLight(0x7090b0, 1.2);
         scene.add(ambientLight);
 
-        const dirLight = new THREE.DirectionalLight(0xdff0ff, 1.6);
-        dirLight.position.set(25, 45, 20);
-        dirLight.castShadow = true;
-        dirLight.shadow.mapSize.width = 2048;
-        dirLight.shadow.mapSize.height = 2048;
-        dirLight.shadow.camera.near = 0.5;
-        dirLight.shadow.camera.far = 150;
-        const d = 40;
-        dirLight.shadow.camera.left = -d; dirLight.shadow.camera.right = d;
-        dirLight.shadow.camera.top = d; dirLight.shadow.camera.bottom = -d;
-        scene.add(dirLight);
+        const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444455, 0.8);
+        hemiLight.position.set(0, 100, 0);
+        scene.add(hemiLight);
+
+        const sunLight = new THREE.DirectionalLight(0xffffff, 2.2);
+        sunLight.position.set(80, 120, 60);
+        sunLight.castShadow = true;
+        sunLight.shadow.mapSize.width = 2048;
+        sunLight.shadow.mapSize.height = 2048;
+        sunLight.shadow.camera.near = 1;
+        sunLight.shadow.camera.far = 300;
+        const d = 110;
+        sunLight.shadow.camera.left = -d; sunLight.shadow.camera.right = d;
+        sunLight.shadow.camera.top = d; sunLight.shadow.camera.bottom = -d;
+        scene.add(sunLight);
 
         /* =========================================================================
-         *  ARENA & ENVIRONMENT BUILDER
+         *  MAP & TERRAIN (200x200 ARENA + RAISED PLATFORM & RAMPS)
          * ========================================================================= */
-        const arenaSize = 90;
+        const arenaSize = 200;
         const floorGeo = new THREE.PlaneGeometry(arenaSize, arenaSize);
         const floorMat = new THREE.MeshStandardMaterial({
             map: createGridTexture(),
-            roughness: 0.35,
-            metalness: 0.65
+            roughness: 0.3,
+            metalness: 0.7
         });
         const floor = new THREE.Mesh(floorGeo, floorMat);
         floor.rotation.x = -Math.PI / 2;
@@ -542,13 +568,13 @@
         scene.add(floor);
 
         // Perimeter Walls
-        const wallMat = new THREE.MeshStandardMaterial({ color: 0x070c18, roughness: 0.2, metalness: 0.8 });
+        const wallMat = new THREE.MeshStandardMaterial({ color: 0x0f1b2e, roughness: 0.2, metalness: 0.8 });
         const halfA = arenaSize / 2;
         const walls = [
-            { w: arenaSize, h: 8, d: 2, x: 0, z: -halfA },
-            { w: arenaSize, h: 8, d: 2, x: 0, z: halfA },
-            { w: 2, h: 8, d: arenaSize, x: -halfA, z: 0 },
-            { w: 2, h: 8, d: arenaSize, x: halfA, z: 0 }
+            { w: arenaSize, h: 14, d: 3, x: 0, z: -halfA },
+            { w: arenaSize, h: 14, d: 3, x: 0, z: halfA },
+            { w: 3, h: 14, d: arenaSize, x: -halfA, z: 0 },
+            { w: 3, h: 14, d: arenaSize, x: halfA, z: 0 }
         ];
 
         walls.forEach(w => {
@@ -559,75 +585,179 @@
             scene.add(wall);
         });
 
-        // Cover Crates
+        // Obstacle Boxes for AI Avoidance & Physics Collision
         const obstacles = [];
-        const crateMat = new THREE.MeshStandardMaterial({ color: 0x101a2e, roughness: 0.3, metalness: 0.7 });
-        const glowEdgeMat = new THREE.MeshStandardMaterial({ color: 0x00f0ff, emissive: 0x00f0ff, emissiveIntensity: 0.8 });
+
+        // Central Raised Platform (40x40, height 3.5)
+        const platWidth = 40;
+        const platHeight = 3.5;
+        const platMat = new THREE.MeshStandardMaterial({ color: 0x16243b, roughness: 0.25, metalness: 0.85 });
+        const platMesh = new THREE.Mesh(new THREE.BoxGeometry(platWidth, platHeight, platWidth), platMat);
+        platMesh.position.set(0, platHeight / 2, 0);
+        platMesh.castShadow = true;
+        platMesh.receiveShadow = true;
+        scene.add(platMesh);
+
+        // Platform Glowing Edge Trim
+        const trimMat = new THREE.MeshStandardMaterial({ color: 0x00f0ff, emissive: 0x00f0ff, emissiveIntensity: 1.0 });
+        const trim = new THREE.Mesh(new THREE.BoxGeometry(platWidth + 0.2, 0.25, platWidth + 0.2), trimMat);
+        trim.position.set(0, platHeight, 0);
+        scene.add(trim);
+
+        // Ramps Setup (North, South, East, West)
+        const rampLength = 12;
+        const rampWidth = 8;
+        const rampAngle = Math.atan2(platHeight, rampLength);
+
+        function createRamp(x, z, rotY) {
+            const rampGroup = new THREE.Group();
+            const rampGeo = new THREE.BoxGeometry(rampWidth, 0.4, Math.hypot(platHeight, rampLength));
+            const rampMesh = new THREE.Mesh(rampGeo, platMat);
+            rampMesh.castShadow = true;
+            rampMesh.receiveShadow = true;
+            rampGroup.add(rampMesh);
+
+            rampGroup.position.set(x, platHeight / 2, z);
+            rampGroup.rotation.y = rotY;
+            rampGroup.children[0].rotation.x = rampAngle;
+            scene.add(rampGroup);
+        }
+
+        createRamp(0, -20 - rampLength / 2, 0);                 // North Ramp
+        createRamp(0, 20 + rampLength / 2, Math.PI);           // South Ramp
+        createRamp(-20 - rampLength / 2, 0, -Math.PI / 2);     // West Ramp
+        createRamp(20 + rampLength / 2, 0, Math.PI / 2);      // East Ramp
+
+        // Function to check terrain elevation (flat ground vs raised platform vs ramps)
+        function getTerrainHeight(x, z) {
+            // Central platform bounds
+            if (Math.abs(x) <= 20 && Math.abs(z) <= 20) {
+                return platHeight;
+            }
+            // North Ramp
+            if (Math.abs(x) <= rampWidth / 2 && z >= -20 - rampLength && z <= -20) {
+                const pct = (z - (-20 - rampLength)) / rampLength;
+                return pct * platHeight;
+            }
+            // South Ramp
+            if (Math.abs(x) <= rampWidth / 2 && z >= 20 && z <= 20 + rampLength) {
+                const pct = ((20 + rampLength) - z) / rampLength;
+                return pct * platHeight;
+            }
+            // West Ramp
+            if (Math.abs(z) <= rampWidth / 2 && x >= -20 - rampLength && x <= -20) {
+                const pct = (x - (-20 - rampLength)) / rampLength;
+                return pct * platHeight;
+            }
+            // East Ramp
+            if (Math.abs(z) <= rampWidth / 2 && x >= 20 && x <= 20 + rampLength) {
+                const pct = ((20 + rampLength) - x) / rampLength;
+                return pct * platHeight;
+            }
+            return 0; // Floor height
+        }
+
+        // Cover Crates & Surrounding Pillars
+        const crateMat = new THREE.MeshStandardMaterial({ color: 0x121e33, roughness: 0.3, metalness: 0.7 });
+        const pillarMat = new THREE.MeshStandardMaterial({ color: 0x0b1322, roughness: 0.2, metalness: 0.9 });
 
         function createCrate(x, z, sx, sy, sz) {
             const crateGroup = new THREE.Group();
             const mainMesh = new THREE.Mesh(new THREE.BoxGeometry(sx, sy, sz), crateMat);
-            mainMesh.position.y = sy / 2;
+            const baseElevation = getTerrainHeight(x, z);
+            mainMesh.position.y = baseElevation + sy / 2;
             mainMesh.castShadow = true;
             mainMesh.receiveShadow = true;
             crateGroup.add(mainMesh);
 
-            const stripe = new THREE.Mesh(new THREE.BoxGeometry(sx + 0.04, 0.15, sz + 0.04), glowEdgeMat);
-            stripe.position.y = sy / 2;
+            const stripe = new THREE.Mesh(new THREE.BoxGeometry(sx + 0.05, 0.2, sz + 0.05), trimMat);
+            stripe.position.y = baseElevation + sy / 2;
             crateGroup.add(stripe);
 
             crateGroup.position.set(x, 0, z);
             scene.add(crateGroup);
 
             obstacles.push({
-                minX: x - sx / 2 - 0.7,
-                maxX: x + sx / 2 + 0.7,
-                minZ: z - sz / 2 - 0.7,
-                maxZ: z + sz / 2 + 0.7
+                minX: x - sx / 2 - 0.8,
+                maxX: x + sx / 2 + 0.8,
+                minZ: z - sz / 2 - 0.8,
+                maxZ: z + sz / 2 + 0.8
             });
         }
 
-        createCrate(-12, -12, 5, 4, 5);
-        createCrate(12, -12, 5, 5, 5);
-        createCrate(-12, 12, 5, 5, 5);
-        createCrate(12, 12, 4, 4, 6);
-        createCrate(0, -20, 8, 3, 3);
-        createCrate(0, 20, 8, 3, 3);
-        createCrate(-20, 0, 3, 3, 8);
-        createCrate(20, 0, 3, 3, 8);
+        function createPillar(x, z, r = 2.5, h = 16) {
+            const pillar = new THREE.Mesh(new THREE.CylinderGeometry(r, r, h, 12), pillarMat);
+            pillar.position.set(x, h / 2, z);
+            pillar.castShadow = true;
+            pillar.receiveShadow = true;
+            scene.add(pillar);
+
+            const ring = new THREE.Mesh(new THREE.TorusGeometry(r + 0.1, 0.15, 8, 24), trimMat);
+            ring.rotation.x = Math.PI / 2;
+            ring.position.set(x, h * 0.6, z);
+            scene.add(ring);
+
+            obstacles.push({
+                minX: x - r - 0.8,
+                maxX: x + r + 0.8,
+                minZ: z - r - 0.8,
+                maxZ: z + r + 0.8
+            });
+        }
+
+        // Add Pillars around Arena Radial
+        const pillarDist = 55;
+        for (let i = 0; i < 8; i++) {
+            const angle = (i / 8) * Math.PI * 2;
+            createPillar(Math.cos(angle) * pillarDist, Math.sin(angle) * pillarDist);
+        }
+
+        // Add Crates on Flat Ground and Raised Platform
+        createCrate(-10, -10, 4, 3, 4);
+        createCrate(10, 10, 4, 3, 4);
+        createCrate(-10, 10, 4, 3, 4);
+        createCrate(10, -10, 4, 3, 4);
+
+        createCrate(-40, -40, 6, 4, 6);
+        createCrate(40, -40, 6, 4, 6);
+        createCrate(-40, 40, 6, 4, 6);
+        createCrate(40, 40, 6, 4, 6);
+
+        createCrate(0, -60, 10, 4, 4);
+        createCrate(0, 60, 10, 4, 4);
+        createCrate(-60, 0, 4, 4, 10);
+        createCrate(60, 0, 4, 4, 10);
 
         /* =========================================================================
          *  WEAPON VIEWMODEL & VISUAL SLASH MESH
          * ========================================================================= */
         const weaponGroup = new THREE.Group();
 
-        // Sword Hilt
+        // Hilt
         const handle = new THREE.Mesh(
-            new THREE.CylinderGeometry(0.022, 0.022, 0.32, 8),
+            new THREE.CylinderGeometry(0.022, 0.022, 0.35, 8),
             new THREE.MeshStandardMaterial({ color: 0x111111, metalness: 0.9 })
         );
-        handle.position.y = -0.14;
+        handle.position.y = -0.15;
         weaponGroup.add(handle);
 
-        // Sword Guard
+        // Guard
         const guard = new THREE.Mesh(
-            new THREE.BoxGeometry(0.18, 0.03, 0.07),
+            new THREE.BoxGeometry(0.2, 0.035, 0.08),
             new THREE.MeshStandardMaterial({ color: 0x222222, metalness: 0.8 })
         );
         guard.position.y = 0.02;
         weaponGroup.add(guard);
 
         // Cyber Energy Blade
-        const blade = new THREE.Mesh(
-            new THREE.BoxGeometry(0.038, 1.05, 0.015),
-            new THREE.MeshStandardMaterial({
-                color: 0x00f0ff,
-                emissive: 0x00f0ff,
-                emissiveIntensity: 2.2,
-                roughness: 0.1
-            })
-        );
-        blade.position.y = 0.55;
+        const bladeMat = new THREE.MeshStandardMaterial({
+            color: 0x00f0ff,
+            emissive: 0x00f0ff,
+            emissiveIntensity: 2.5,
+            roughness: 0.1
+        });
+        const blade = new THREE.Mesh(new THREE.BoxGeometry(0.04, 1.15, 0.018), bladeMat);
+        blade.position.y = 0.6;
         weaponGroup.add(blade);
 
         weaponGroup.position.set(0.32, -0.28, -0.5);
@@ -635,8 +765,8 @@
         camera.add(weaponGroup);
         scene.add(camera);
 
-        // Slash Arc Mesh attached in front of camera
-        const slashGeo = new THREE.RingGeometry(0.25, 1.1, 16, 1, 0, Math.PI * 0.65);
+        // Slash Arc Mesh in front of camera
+        const slashGeo = new THREE.RingGeometry(0.25, 1.25, 18, 1, 0, Math.PI * 0.7);
         const slashMat = new THREE.MeshBasicMaterial({
             color: 0x00f0ff,
             side: THREE.DoubleSide,
@@ -649,14 +779,14 @@
         camera.add(slashMesh);
 
         /* =========================================================================
-         *  SHOCKWAVE 3D MESH (For 'E' Special Ability)
+         *  SPECIAL ABILITY SHOCKWAVE MESH
          * ========================================================================= */
-        const shockwaveRingGeo = new THREE.TorusGeometry(0.6, 0.18, 12, 32);
+        const shockwaveRingGeo = new THREE.TorusGeometry(0.6, 0.22, 12, 36);
         shockwaveRingGeo.rotateX(Math.PI / 2);
         const shockwaveRingMat = new THREE.MeshStandardMaterial({
             color: 0x00f0ff,
             emissive: 0x00f0ff,
-            emissiveIntensity: 2.5,
+            emissiveIntensity: 3.0,
             transparent: true,
             opacity: 0
         });
@@ -664,20 +794,20 @@
         scene.add(shockwaveMesh);
 
         /* =========================================================================
-         *  PARTICLE SYSTEM & FLOATING DAMAGE TEXTS
+         *  PARTICLES & FLOATING DAMAGE NUMBERS
          * ========================================================================= */
         const particles = [];
-        const particleGeo = new THREE.SphereGeometry(0.05, 6, 6);
+        const particleGeo = new THREE.SphereGeometry(0.06, 6, 6);
 
-        function createSparkBurst(pos, count = 12, colorHex = 0x00f0ff) {
+        function createSparkBurst(pos, count = 16, colorHex = 0x00f0ff) {
             const mat = new THREE.MeshBasicMaterial({ color: colorHex });
             for (let i = 0; i < count; i++) {
                 const mesh = new THREE.Mesh(particleGeo, mat);
                 mesh.position.copy(pos);
                 const vel = new THREE.Vector3(
-                    (Math.random() - 0.5) * 8,
-                    Math.random() * 5 + 2.0,
-                    (Math.random() - 0.5) * 8
+                    (Math.random() - 0.5) * 10,
+                    Math.random() * 6 + 2.5,
+                    (Math.random() - 0.5) * 10
                 );
                 particles.push({ mesh, vel, life: 1.0 });
                 scene.add(mesh);
@@ -694,14 +824,13 @@
                     p.mesh.material.dispose();
                     particles.splice(i, 1);
                 } else {
-                    p.vel.y -= delta * 15;
+                    p.vel.y -= delta * 16;
                     p.mesh.position.addScaledVector(p.vel, delta);
                     p.mesh.scale.setScalar(p.life);
                 }
             }
         }
 
-        // Floating Damage Text System
         const floatingTexts = [];
 
         function spawnDamageText(pos, amount, isCritical = false) {
@@ -743,7 +872,7 @@
         }
 
         /* =========================================================================
-         *  ENEMY BOT CLASS WITH 3D BILLBOARD HEALTH BARS
+         *  SMART ENEMY CLASSES & AI OBSTACLE AVOIDANCE
          * ========================================================================= */
         const enemies = [];
 
@@ -756,50 +885,87 @@
             const texture = new THREE.CanvasTexture(canvas);
             const spriteMat = new THREE.SpriteMaterial({ map: texture, transparent: true });
             const sprite = new THREE.Sprite(spriteMat);
-            sprite.scale.set(1.4, 0.22, 1);
-            sprite.position.set(0, 1.3, 0);
+            sprite.scale.set(1.5, 0.24, 1);
+            sprite.position.set(0, 1.4, 0);
 
             return { sprite, canvas, ctx, texture };
         }
 
         class EnemyBot {
-            constructor(x, z, healthScale = 1.0) {
-                this.hp = Math.floor(100 * healthScale);
-                this.maxHp = this.hp;
-                this.speed = 3.8 + Math.random() * 1.4;
-                this.attackCooldown = 0;
+            constructor(x, z, type = 'soldier', healthScale = 1.0) {
+                this.type = type; // 'assassin', 'soldier', 'juggernaut'
                 this.knockbackVel = new THREE.Vector3();
+                this.attackCooldown = 0;
 
                 this.mesh = new THREE.Group();
-                this.mesh.position.set(x, 1.2, z);
 
+                let bodyColor = 0xff0055;
+                let scale = 1.0;
+
+                if (type === 'assassin') {
+                    this.maxHp = Math.floor(60 * healthScale);
+                    this.speed = 6.2;
+                    this.attackDmg = 8;
+                    this.attackRate = 0.7;
+                    bodyColor = 0xd000ff;
+                    scale = 0.75;
+                } else if (type === 'soldier') {
+                    this.maxHp = Math.floor(120 * healthScale);
+                    this.speed = 4.2;
+                    this.attackDmg = 15;
+                    this.attackRate = 1.2;
+                    bodyColor = 0xff0044;
+                    scale = 1.0;
+                } else if (type === 'juggernaut') {
+                    this.maxHp = Math.floor(350 * healthScale);
+                    this.speed = 2.4;
+                    this.attackDmg = 35;
+                    this.attackRate = 2.0;
+                    bodyColor = 0xffaa00;
+                    scale = 1.8;
+                }
+
+                this.hp = this.maxHp;
+                this.scale = scale;
+
+                const baseElev = getTerrainHeight(x, z);
+                this.mesh.position.set(x, baseElev + 1.2 * scale, z);
+
+                // Body Geometry
                 const bodyMat = new THREE.MeshStandardMaterial({
-                    color: 0x18040d,
-                    roughness: 0.3,
-                    metalness: 0.8,
-                    emissive: 0xff0055,
-                    emissiveIntensity: 0.55
+                    color: 0x141a24,
+                    roughness: 0.25,
+                    metalness: 0.85,
+                    emissive: bodyColor,
+                    emissiveIntensity: 0.6
                 });
-                this.body = new THREE.Mesh(new THREE.OctahedronGeometry(0.85, 2), bodyMat);
+
+                this.body = new THREE.Mesh(
+                    type === 'juggernaut' ? new THREE.BoxGeometry(1.2 * scale, 1.4 * scale, 1.2 * scale) : new THREE.OctahedronGeometry(0.85 * scale, 2),
+                    bodyMat
+                );
                 this.body.castShadow = true;
                 this.mesh.add(this.body);
 
-                const eye = new THREE.Mesh(
-                    new THREE.BoxGeometry(0.5, 0.12, 0.35),
-                    new THREE.MeshBasicMaterial({ color: 0xff0044 })
+                // Eye / Visor
+                const visor = new THREE.Mesh(
+                    new THREE.BoxGeometry(0.5 * scale, 0.12 * scale, 0.35 * scale),
+                    new THREE.MeshBasicMaterial({ color: bodyColor })
                 );
-                eye.position.set(0, 0.2, -0.55);
-                this.mesh.add(eye);
+                visor.position.set(0, 0.2 * scale, -0.5 * scale);
+                this.mesh.add(visor);
 
+                // Outer Ring
                 this.ring = new THREE.Mesh(
-                    new THREE.TorusGeometry(1.1, 0.03, 8, 20),
-                    new THREE.MeshBasicMaterial({ color: 0xff0055 })
+                    new THREE.TorusGeometry(1.1 * scale, 0.04 * scale, 8, 20),
+                    new THREE.MeshBasicMaterial({ color: bodyColor })
                 );
                 this.ring.rotation.x = Math.PI / 2;
                 this.mesh.add(this.ring);
 
                 // Billboard Health Bar Sprite
                 this.hpBar = createHealthBarSprite();
+                this.hpBar.sprite.position.y = 1.4 * scale;
                 this.mesh.add(this.hpBar.sprite);
                 this.updateHealthBarUI();
 
@@ -811,7 +977,7 @@
                 const pct = Math.max(0, this.hp / this.maxHp);
 
                 ctx.clearRect(0, 0, 128, 20);
-                ctx.fillStyle = 'rgba(10, 10, 20, 0.85)';
+                ctx.fillStyle = 'rgba(8, 12, 24, 0.85)';
                 ctx.fillRect(0, 0, 128, 20);
                 ctx.strokeStyle = '#00f0ff';
                 ctx.lineWidth = 2;
@@ -823,44 +989,77 @@
                 this.hpBar.texture.needsUpdate = true;
             }
 
+            // Raycast / Steering Obstacle Avoidance Pathing
+            getSteeringDir(targetPos) {
+                const desired = new THREE.Vector3().subVectors(targetPos, this.mesh.position);
+                desired.y = 0;
+                if (desired.lengthSq() < 0.01) return desired.normalize();
+                desired.normalize();
+
+                // Test predicted future position
+                const futureX = this.mesh.position.x + desired.x * 2.5;
+                const futureZ = this.mesh.position.z + desired.z * 2.5;
+
+                let isBlocked = false;
+                for (const obs of obstacles) {
+                    if (futureX > obs.minX && futureX < obs.maxX && futureZ > obs.minZ && futureZ < obs.maxZ) {
+                        isBlocked = true;
+                        break;
+                    }
+                }
+
+                if (!isBlocked) return desired;
+
+                // Alternate ray steering angles (45 deg & 90 deg)
+                const angles = [Math.PI / 4, -Math.PI / 4, Math.PI / 2, -Math.PI / 2];
+                for (const angle of angles) {
+                    const altDir = desired.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), angle);
+                    const altX = this.mesh.position.x + altDir.x * 2.5;
+                    const altZ = this.mesh.position.z + altDir.z * 2.5;
+                    let altBlocked = false;
+
+                    for (const obs of obstacles) {
+                        if (altX > obs.minX && altX < obs.maxX && altZ > obs.minZ && altZ < obs.maxZ) {
+                            altBlocked = true; break;
+                        }
+                    }
+                    if (!altBlocked) return altDir;
+                }
+
+                return desired;
+            }
+
             update(delta, playerPos) {
                 if (this.hp <= 0) return;
 
-                // Oscillation float
-                this.mesh.position.y = 1.2 + Math.sin(Date.now() * 0.004 + this.mesh.id) * 0.18;
-                this.ring.rotation.z += delta * 2;
+                // Hover oscillation & ring rotation
+                const baseElev = getTerrainHeight(this.mesh.position.x, this.mesh.position.z);
+                this.mesh.position.y = baseElev + 1.2 * this.scale + Math.sin(Date.now() * 0.004 + this.mesh.id) * 0.15;
+                this.ring.rotation.z += delta * 2.5;
 
-                // Apply Knockback Physics Decay
+                // Knockback Physics Decay
                 if (this.knockbackVel.lengthSq() > 0.01) {
                     this.mesh.position.addScaledVector(this.knockbackVel, delta);
                     this.knockbackVel.multiplyScalar(Math.max(0, 1 - delta * 6.5));
                 }
 
-                const dir = new THREE.Vector3().subVectors(playerPos, this.mesh.position);
-                dir.y = 0;
-                const dist = dir.length();
-                dir.normalize();
-
+                const dist = this.mesh.position.distanceTo(playerPos);
                 this.mesh.lookAt(playerPos.x, this.mesh.position.y, playerPos.z);
 
-                if (dist > 1.4) {
-                    const nextX = this.mesh.position.x + dir.x * this.speed * delta;
-                    const nextZ = this.mesh.position.z + dir.z * this.speed * delta;
+                if (dist > 1.6 * this.scale) {
+                    const moveDir = this.getSteeringDir(playerPos);
+                    const nextX = this.mesh.position.x + moveDir.x * this.speed * delta;
+                    const nextZ = this.mesh.position.z + moveDir.z * this.speed * delta;
 
-                    let canMove = true;
-                    for (const obs of obstacles) {
-                        if (nextX > obs.minX && nextX < obs.maxX && nextZ > obs.minZ && nextZ < obs.maxZ) {
-                            canMove = false; break;
-                        }
-                    }
-                    if (canMove) {
-                        this.mesh.position.x = nextX;
-                        this.mesh.position.z = nextZ;
-                    }
+                    // Bounds Check
+                    const bound = arenaSize / 2 - 2;
+                    if (Math.abs(nextX) < bound) this.mesh.position.x = nextX;
+                    if (Math.abs(nextZ) < bound) this.mesh.position.z = nextZ;
                 } else {
                     if (this.attackCooldown <= 0) {
-                        damagePlayer(12);
-                        this.attackCooldown = 1.1;
+                        damagePlayer(this.attackDmg);
+                        this.attackCooldown = this.attackRate;
+                        if (this.type === 'juggernaut') cameraShakeTime = 0.25;
                     }
                 }
 
@@ -869,8 +1068,8 @@
 
             takeDamage(amount, pushDir, kbStrength = 1.2) {
                 this.hp -= amount;
-                this.knockbackVel.addScaledVector(pushDir, kbStrength * 7.5);
-                createSparkBurst(this.mesh.position, 12, 0xff0055);
+                this.knockbackVel.addScaledVector(pushDir, kbStrength * (2.2 / this.scale));
+                createSparkBurst(this.mesh.position, 12, this.type === 'juggernaut' ? 0xffaa00 : 0xff0055);
                 this.updateHealthBarUI();
 
                 if (this.hp <= 0) {
@@ -881,7 +1080,7 @@
             }
 
             destroy() {
-                createSparkBurst(this.mesh.position, 28, 0xff0055);
+                createSparkBurst(this.mesh.position, 30, 0x00f0ff);
                 audio.playEnemyDeath();
                 scene.remove(this.mesh);
             }
@@ -901,24 +1100,31 @@
             sub.innerText = subtext;
 
             banner.classList.remove('hidden', 'wave-banner-anim');
-            void banner.offsetWidth; // Force Reflow
+            void banner.offsetWidth;
             banner.classList.add('wave-banner-anim');
 
-            setTimeout(() => {
-                banner.classList.add('hidden');
-            }, 2200);
+            setTimeout(() => banner.classList.add('hidden'), 2200);
         }
 
         function spawnEnemyWave() {
-            const count = 3 + (waveNumber - 1) * 2;
-            const healthScale = 1.0 + (waveNumber - 1) * 0.18;
+            const totalCount = 4 + (waveNumber - 1) * 3;
+            const healthScale = 1.0 + (waveNumber - 1) * 0.2;
 
-            triggerWaveBanner(`WAVE ${waveNumber}`, `ELIMINATE ${count} HOSTILE UNITS`);
+            triggerWaveBanner(`WAVE ${waveNumber}`, `ELIMINATE ${totalCount} HOSTILE UNITS`);
 
-            for (let i = 0; i < count; i++) {
-                const angle = (i / count) * Math.PI * 2 + (Math.random() * 0.4);
-                const r = 28 + Math.random() * 10;
-                enemies.push(new EnemyBot(Math.cos(angle) * r, Math.sin(angle) * r, healthScale));
+            for (let i = 0; i < totalCount; i++) {
+                const angle = (i / totalCount) * Math.PI * 2 + Math.random() * 0.3;
+                const r = 45 + Math.random() * 35;
+                const spawnX = Math.cos(angle) * r;
+                const spawnZ = Math.sin(angle) * r;
+
+                // Select Class based on wave progression
+                let type = 'soldier';
+                const rand = Math.random();
+                if (waveNumber >= 2 && rand < 0.35) type = 'assassin';
+                if (waveNumber >= 3 && rand > 0.70) type = 'juggernaut';
+
+                enemies.push(new EnemyBot(spawnX, spawnZ, type, healthScale));
             }
 
             document.getElementById('wave-val').innerText = waveNumber;
@@ -927,14 +1133,14 @@
 
         function checkWaveProgression() {
             if (enemies.length === 0 && gameState.active) {
-                gameState.score += 300 * waveNumber;
+                gameState.score += 400 * waveNumber;
                 waveNumber++;
-                setTimeout(spawnEnemyWave, 1200);
+                setTimeout(spawnEnemyWave, 1400);
             }
         }
 
         /* =========================================================================
-         *  ROBUST PLAYER & CAMERA CONTROLS
+         *  PLAYER CONTROLLER & 3-HIT COMBO SYSTEM
          * ========================================================================= */
         const player = {
             hp: 100, maxHp: 100,
@@ -946,6 +1152,15 @@
             yaw: 0,
             pitch: 0,
             sensitivity: 0.0022
+        };
+
+        const comboState = {
+            step: 0,           // 0, 1, 2, 3
+            timer: 0,          // Combo reset countdown (1.2s max)
+            maxWindow: 1.2,
+            isAttacking: false,
+            attackTimer: 0,
+            attackDuration: 0.20
         };
 
         const abilityState = {
@@ -976,12 +1191,9 @@
         menuSensSlider.addEventListener('input', (e) => setSensitivity(e.target.value));
         hudSensSlider.addEventListener('input', (e) => setSensitivity(e.target.value));
 
-        // Keyboard Listeners
         window.addEventListener('keydown', (e) => {
             keys[e.code] = true;
-            if (e.code === 'KeyE') {
-                triggerShockwave();
-            }
+            if (e.code === 'KeyE') triggerShockwave();
         });
 
         window.addEventListener('keyup', (e) => keys[e.code] = false);
@@ -999,7 +1211,6 @@
             camera.rotation.z = 0;
         }
 
-        // Mouse Look & Drag Event Handlers
         window.addEventListener('mousemove', (e) => {
             if (isPointerLocked) {
                 rotateCamera(e.movementX, e.movementY);
@@ -1013,26 +1224,23 @@
         });
 
         /* =========================================================================
-         *  DIRECT M1 / POINTER ATTACK HANDLERS
+         *  M1 3-HIT COMBO ATTACK MECHANICS
          * ========================================================================= */
         function triggerPrimaryAttack(e) {
             if (!gameState.active) return;
-
-            // Avoid triggering attack when clicking on menu/HUD interactive inputs
             if (e && e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON' || e.target.closest('button'))) {
                 return;
             }
 
             audio.init();
 
-            if (!isAttacking) {
-                performAttack();
+            if (!comboState.isAttacking) {
+                executeNextComboHit();
             }
         }
 
-        // Listen on pointerdown and mousedown at window level to guarantee M1 trigger
         window.addEventListener('pointerdown', (e) => {
-            if (e.button === 0) { // M1 Left Click
+            if (e.button === 0) {
                 isMouseDown = true;
                 lastMouseX = e.clientX;
                 lastMouseY = e.clientY;
@@ -1043,60 +1251,106 @@
         window.addEventListener('mouseup', () => isMouseDown = false);
         window.addEventListener('pointerup', () => isMouseDown = false);
 
-        // Explicit HUD Attack Button Listener
         document.getElementById('hud-m1-btn').addEventListener('click', (e) => {
             e.stopPropagation();
             audio.init();
-            if (!isAttacking && gameState.active) performAttack();
+            if (!comboState.isAttacking && gameState.active) executeNextComboHit();
         });
 
-        // HUD Ability Card Click Listener
         document.getElementById('ability-card').addEventListener('click', (e) => {
             e.stopPropagation();
             audio.init();
             triggerShockwave();
         });
 
-        /* =========================================================================
-         *  ATTACK & SPECIAL ABILITY MECHANICS
-         * ========================================================================= */
-        let isAttacking = false;
-        let attackTimer = 0;
-        const attackDuration = 0.20;
+        function showComboPopupText(text, colorClass = "from-yellow-300 via-pink-500 to-cyan-400") {
+            const popup = document.getElementById('combo-popup');
+            const popupText = document.getElementById('combo-popup-text');
 
-        function performAttack() {
-            isAttacking = true;
-            attackTimer = attackDuration;
-            audio.playSwing();
+            popupText.innerText = text;
+            popup.classList.remove('hidden', 'combo-anim');
+            void popup.offsetWidth;
+            popup.classList.add('combo-anim');
+
+            setTimeout(() => popup.classList.add('hidden'), 850);
+        }
+
+        function executeNextComboHit() {
+            comboState.step = (comboState.step % 3) + 1;
+            comboState.timer = comboState.maxWindow;
+            comboState.isAttacking = true;
+
+            let damage = 35;
+            let range = 4.8;
+            let knockback = 1.0;
 
             document.getElementById('crosshair').classList.add('expanded');
+
+            if (comboState.step === 1) {
+                // Hit 1: Quick Diagonal Slash
+                damage = 35;
+                comboState.attackDuration = 0.18;
+                audio.playSwingLight();
+                bladeMat.color.setHex(0x00f0ff);
+                bladeMat.emissive.setHex(0x00f0ff);
+                slashMat.color.setHex(0x00f0ff);
+                showComboPopupText("1-HIT SLASH!");
+            } else if (comboState.step === 2) {
+                // Hit 2: Rapid Back-Slash
+                damage = 45;
+                comboState.attackDuration = 0.18;
+                audio.playSwingMedium();
+                bladeMat.color.setHex(0xff00cc);
+                bladeMat.emissive.setHex(0xff00cc);
+                slashMat.color.setHex(0xff00cc);
+                showComboPopupText("2-HIT COMBO!");
+            } else if (comboState.step === 3) {
+                // Hit 3: Overhead Downward Heavy Finisher Slam
+                damage = 90;
+                comboState.attackDuration = 0.28;
+                knockback = 3.5;
+                audio.playSwingHeavy();
+                bladeMat.color.setHex(0xffd700);
+                bladeMat.emissive.setHex(0xffd700);
+                slashMat.color.setHex(0xffd700);
+                cameraShakeTime = 0.35;
+                showComboPopupText("3-HIT FINISHER!");
+            }
+
+            comboState.attackTimer = comboState.attackDuration;
             slashMat.opacity = 0.95;
             slashMesh.scale.set(0.4, 0.4, 0.4);
 
+            document.getElementById('hud-combo-label').innerText = `HIT ${comboState.step} / 3`;
+
+            // Detect enemy hit
             const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
-            const attackRange = 4.5;
 
             for (let i = enemies.length - 1; i >= 0; i--) {
                 const enemy = enemies[i];
                 const dist = camera.position.distanceTo(enemy.mesh.position);
 
-                if (dist <= attackRange) {
+                if (dist <= range) {
                     const toEnemy = new THREE.Vector3().subVectors(enemy.mesh.position, camera.position).normalize();
                     const dot = forward.dot(toEnemy);
 
-                    if (dot > 0.52) { // Forward hit cone
+                    if (dot > 0.48) {
                         audio.playHit();
                         showHitMarker();
 
-                        const dmg = 55 + Math.floor(Math.random() * 12);
-                        spawnDamageText(enemy.mesh.position, dmg);
+                        if (comboState.step === 3) {
+                            createSparkBurst(enemy.mesh.position, 24, 0xffd700);
+                        }
 
-                        const died = enemy.takeDamage(dmg, forward, 1.2);
+                        const actualDmg = damage + Math.floor(Math.random() * 8);
+                        spawnDamageText(enemy.mesh.position, actualDmg, comboState.step === 3);
+
+                        const died = enemy.takeDamage(actualDmg, forward, knockback);
                         if (died) {
                             enemies.splice(i, 1);
                             gameState.kills++;
-                            gameState.score += 150;
-                            showKillFeed("HOSTILE SLAIN +150");
+                            gameState.score += 150 * comboState.step;
+                            showKillFeed(`HOSTILE DESTROYED +${150 * comboState.step}`);
                             updateEnemyCounter();
                             checkWaveProgression();
                         }
@@ -1112,25 +1366,17 @@
             abilityState.cooldownTimer = abilityState.cooldownMax;
             audio.playShockwave();
 
-            // Setup shockwave visual mesh
             shockwaveMesh.position.copy(player.pos);
-            shockwaveMesh.position.y = 0.15;
+            shockwaveMesh.position.y = getTerrainHeight(player.pos.x, player.pos.z) + 0.15;
             shockwaveMesh.scale.set(1, 1, 1);
             shockwaveRingMat.opacity = 1.0;
             abilityState.shockwaveActive = true;
             abilityState.shockwaveRadius = 1.0;
 
-            // Forward impulse dash
-            const forwardX = -Math.sin(player.yaw);
-            const forwardZ = -Math.cos(player.yaw);
-            player.vel.x += forwardX * 12.0;
-            player.vel.z += forwardZ * 12.0;
+            cameraShakeTime = 0.4;
+            createSparkBurst(player.pos, 45, 0x00f0ff);
 
-            cameraShakeTime = 0.35;
-            createSparkBurst(player.pos, 35, 0x00f0ff);
-
-            // AOE Damage & Massive Knockback
-            const shockwaveRange = 11.0;
+            const shockwaveRange = 14.0;
             for (let i = enemies.length - 1; i >= 0; i--) {
                 const enemy = enemies[i];
                 const dist = player.pos.distanceTo(enemy.mesh.position);
@@ -1143,12 +1389,12 @@
                     const dmg = 120;
                     spawnDamageText(enemy.mesh.position, dmg, true);
 
-                    const died = enemy.takeDamage(dmg, kbDir, 3.8);
+                    const died = enemy.takeDamage(dmg, kbDir, 4.2);
                     if (died) {
                         enemies.splice(i, 1);
                         gameState.kills++;
-                        gameState.score += 250;
-                        showKillFeed("SHOCKWAVE OBLITERATION +250");
+                        gameState.score += 300;
+                        showKillFeed("SHOCKWAVE OBLITERATION +300");
                         updateEnemyCounter();
                         checkWaveProgression();
                     }
@@ -1157,42 +1403,80 @@
         }
 
         function updateWeaponAnimation(delta) {
-            // Weapon M1 Slash Animation
-            if (isAttacking) {
-                attackTimer -= delta;
-                const progress = 1 - (attackTimer / attackDuration);
+            // Combo Reset Window Tick
+            if (comboState.timer > 0) {
+                comboState.timer -= delta;
+                if (comboState.timer <= 0 && !comboState.isAttacking) {
+                    comboState.step = 0;
+                    document.getElementById('hud-combo-label').innerText = "SLASH STRIKE";
+                    bladeMat.color.setHex(0x00f0ff);
+                    bladeMat.emissive.setHex(0x00f0ff);
+                }
+            }
 
-                if (progress < 0.5) {
-                    weaponGroup.rotation.x = 0.1 - progress * 2.4;
-                    weaponGroup.rotation.y = -0.1 - progress * 2.0;
-                    weaponGroup.rotation.z = -0.1 - progress * 2.8;
-                    slashMesh.scale.addScalar(delta * 9);
-                } else {
-                    const returnP = (progress - 0.5) * 2;
-                    weaponGroup.rotation.x = -1.1 + returnP * 1.2;
-                    weaponGroup.rotation.y = -1.1 + returnP * 1.0;
-                    weaponGroup.rotation.z = -1.5 + returnP * 1.4;
+            // Attack Swing Interpolation
+            if (comboState.isAttacking) {
+                comboState.attackTimer -= delta;
+                const progress = 1 - (comboState.attackTimer / comboState.attackDuration);
+
+                if (comboState.step === 1) {
+                    // Quick Diagonal Right-to-Left
+                    if (progress < 0.5) {
+                        weaponGroup.rotation.x = 0.1 - progress * 2.2;
+                        weaponGroup.rotation.y = -0.1 - progress * 2.2;
+                        weaponGroup.rotation.z = -0.1 - progress * 2.5;
+                        slashMesh.scale.addScalar(delta * 10);
+                    } else {
+                        const r = (progress - 0.5) * 2;
+                        weaponGroup.rotation.x = -1.0 + r * 1.1;
+                        weaponGroup.rotation.y = -1.2 + r * 1.1;
+                        weaponGroup.rotation.z = -1.35 + r * 1.25;
+                    }
+                } else if (comboState.step === 2) {
+                    // Rapid Back-Slash Left-to-Right
+                    if (progress < 0.5) {
+                        weaponGroup.rotation.x = -0.2 + progress * 2.0;
+                        weaponGroup.rotation.y = -1.1 + progress * 2.5;
+                        weaponGroup.rotation.z = 0.2 + progress * 2.2;
+                        slashMesh.scale.addScalar(delta * 10);
+                    } else {
+                        const r = (progress - 0.5) * 2;
+                        weaponGroup.rotation.x = 0.8 - r * 1.0;
+                        weaponGroup.rotation.y = 0.15 - r * 1.25;
+                        weaponGroup.rotation.z = 1.3 - r * 1.4;
+                    }
+                } else if (comboState.step === 3) {
+                    // Overhead Downward Heavy Finisher Slam
+                    if (progress < 0.4) {
+                        weaponGroup.rotation.x = 0.1 + progress * 4.2;
+                        weaponGroup.rotation.y = -0.1;
+                        weaponGroup.rotation.z = -0.1;
+                        slashMesh.scale.addScalar(delta * 14);
+                    } else {
+                        const r = (progress - 0.4) * 1.6;
+                        weaponGroup.rotation.x = 1.78 - r * 1.68;
+                    }
                 }
 
                 slashMat.opacity = Math.max(0, 0.95 - progress * 2.0);
 
-                if (attackTimer <= 0) {
-                    isAttacking = false;
+                if (comboState.attackTimer <= 0) {
+                    comboState.isAttacking = false;
                     weaponGroup.rotation.set(0.1, -0.1, -0.1);
                     weaponGroup.position.set(0.32, -0.28, -0.5);
                     slashMat.opacity = 0;
                     document.getElementById('crosshair').classList.remove('expanded');
                 }
             } else {
-                // Idle Breathing Bob
+                // Idle breathing bob animation
                 const time = Date.now() * 0.003;
-                weaponGroup.position.y = -0.28 + Math.sin(time) * 0.01;
+                weaponGroup.position.y = -0.28 + Math.sin(time) * 0.012;
                 weaponGroup.position.x = 0.32 + Math.cos(time * 0.5) * 0.006;
             }
 
-            // Shockwave Mesh Expansion Animation
+            // Shockwave Expanding Torus Ring
             if (abilityState.shockwaveActive) {
-                abilityState.shockwaveRadius += delta * 32.0;
+                abilityState.shockwaveRadius += delta * 36.0;
                 shockwaveMesh.scale.set(abilityState.shockwaveRadius, 1, abilityState.shockwaveRadius);
                 shockwaveRingMat.opacity -= delta * 2.2;
 
@@ -1202,7 +1486,6 @@
                 }
             }
 
-            // Shockwave Ability Cooldown Tick
             if (abilityState.cooldownTimer > 0) {
                 abilityState.cooldownTimer = Math.max(0, abilityState.cooldownTimer - delta);
                 updateAbilityHUD();
@@ -1210,14 +1493,13 @@
         }
 
         /* =========================================================================
-         *  STRICT HORIZONTAL GROUND MOVEMENT (XZ PLANE ONLY)
+         *  PLAYER MOVEMENT & TERRAIN ELEVATION
          * ========================================================================= */
         function updatePlayerMovement(delta) {
             if (!gameState.active) return;
 
-            // Sprinting & Stamina
             player.isSprinting = keys['ShiftLeft'] && player.stamina > 5 && (keys['KeyW'] || keys['KeyS'] || keys['KeyA'] || keys['KeyD']);
-            const speed = player.isSprinting ? 11.8 : 6.4;
+            const speed = player.isSprinting ? 12.5 : 6.8;
 
             if (player.isSprinting) {
                 player.stamina = Math.max(0, player.stamina - delta * 35);
@@ -1225,14 +1507,13 @@
                 player.stamina = Math.min(player.maxStamina, player.stamina + delta * 25);
             }
 
-            // FLAT GROUND MOVEMENT VECTORS (Pitch Angle Excluded!)
+            // Flat Ground Direction Vectors (Pitch Excluded!)
             const forwardX = -Math.sin(player.yaw);
             const forwardZ = -Math.cos(player.yaw);
             const rightX = Math.cos(player.yaw);
             const rightZ = -Math.sin(player.yaw);
 
-            let moveX = 0;
-            let moveZ = 0;
+            let moveX = 0, moveZ = 0;
 
             if (keys['KeyW'] || keys['ArrowUp']) { moveX += forwardX; moveZ += forwardZ; }
             if (keys['KeyS'] || keys['ArrowDown']) { moveX -= forwardX; moveZ -= forwardZ; }
@@ -1240,34 +1521,30 @@
             if (keys['KeyA'] || keys['ArrowLeft']) { moveX -= rightX; moveZ -= rightZ; }
 
             const len = Math.hypot(moveX, moveZ);
-            if (len > 0) {
-                moveX /= len;
-                moveZ /= len;
-            }
+            if (len > 0) { moveX /= len; moveZ /= len; }
 
             player.vel.x = moveX * speed;
             player.vel.z = moveZ * speed;
 
             // Jump Physics
             if (keys['Space'] && player.isGrounded) {
-                player.vel.y = 7.4;
+                player.vel.y = 8.2;
                 player.isGrounded = false;
                 audio.playJump();
             }
 
             if (!player.isGrounded) {
-                player.vel.y -= 22.0 * delta; // Gravity
+                player.vel.y -= 22.0 * delta;
             }
 
-            // Proposed Position Movement
             const nextPos = player.pos.clone().addScaledVector(player.vel, delta);
 
-            // Arena Perimeter Collisions
-            const bound = arenaSize / 2 - 1.2;
+            // Perimeter Wall Boundaries
+            const bound = arenaSize / 2 - 1.5;
             nextPos.x = Math.max(-bound, Math.min(bound, nextPos.x));
             nextPos.z = Math.max(-bound, Math.min(bound, nextPos.z));
 
-            // Obstacle Cover Collisions
+            // Obstacle Crates Collisions
             for (const obs of obstacles) {
                 if (nextPos.x > obs.minX && nextPos.x < obs.maxX && nextPos.z > obs.minZ && nextPos.z < obs.maxZ) {
                     nextPos.x = player.pos.x;
@@ -1276,28 +1553,32 @@
                 }
             }
 
-            // Floor Clamp
-            if (nextPos.y <= 1.6) {
-                nextPos.y = 1.6;
+            // Dynamic Terrain Height Query
+            const targetTerrainY = getTerrainHeight(nextPos.x, nextPos.z) + 1.6;
+
+            if (nextPos.y <= targetTerrainY) {
+                nextPos.y = targetTerrainY;
                 player.vel.y = 0;
                 player.isGrounded = true;
+            } else {
+                player.isGrounded = false;
             }
 
             player.pos.copy(nextPos);
             camera.position.copy(player.pos);
 
-            // Screen Shake Effect
+            // Camera Shake Impulse
             if (cameraShakeTime > 0) {
                 cameraShakeTime -= delta;
-                camera.position.x += (Math.random() - 0.5) * 0.15;
-                camera.position.y += (Math.random() - 0.5) * 0.15;
+                camera.position.x += (Math.random() - 0.5) * 0.18;
+                camera.position.y += (Math.random() - 0.5) * 0.18;
             }
 
             updateHUD();
         }
 
         /* =========================================================================
-         *  STATE MANAGEMENT & HUD OVERLAYS
+         *  HUD & STATE MANAGEMENT
          * ========================================================================= */
         const gameState = { active: false, score: 0, kills: 0 };
 
@@ -1307,7 +1588,7 @@
 
             const vig = document.getElementById('damage-vignette');
             vig.style.opacity = '1';
-            setTimeout(() => vig.style.opacity = '0', 200);
+            setTimeout(() => vig.style.opacity = '0', 180);
 
             updateHUD();
             if (player.hp <= 0) gameOver();
@@ -1325,7 +1606,7 @@
             item.className = 'kill-feed-anim text-pink-400 font-orbitron font-black text-sm sm:text-base tracking-wider drop-shadow-[0_0_8px_rgba(255,0,85,0.8)] mb-1';
             item.innerText = text;
             container.appendChild(item);
-            setTimeout(() => item.remove(), 1250);
+            setTimeout(() => item.remove(), 1350);
         }
 
         function updateEnemyCounter() {
@@ -1385,6 +1666,10 @@
             player.pitch = 0;
             camera.rotation.set(0, 0, 0);
 
+            comboState.step = 0;
+            comboState.timer = 0;
+            comboState.isAttacking = false;
+
             waveNumber = 1;
             gameState.score = 0;
             gameState.kills = 0;
@@ -1399,7 +1684,7 @@
         }
 
         /* =========================================================================
-         *  POINTER LOCK & OVERLAY HANDLERS
+         *  POINTER LOCK & EVENT HANDLERS
          * ========================================================================= */
         const startOverlay = document.getElementById('start-overlay');
         const playBtn = document.getElementById('play-btn');
@@ -1469,7 +1754,7 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
         });
 
-        // Start render loop on load
+        // Start main loop
         animate();
     </script>
 </body>
