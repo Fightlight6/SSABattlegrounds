@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>3D FPS Cyber Battlegrounds - Sunlit Arena Edition</title>
+    <title>3D FPS Cyber Battlegrounds - Fortnite Builder Edition</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Three.js Engine -->
@@ -34,14 +34,21 @@
 
         /* Glassmorphism Sci-Fi Panels */
         .glass-panel {
-            background: rgba(8, 16, 32, 0.85);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
+            background: rgba(8, 16, 32, 0.88);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
             border: 1px solid rgba(0, 240, 255, 0.35);
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.6);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.7);
         }
 
-        /* Dynamic Crosshair Animations */
+        .glass-panel-accent {
+            background: rgba(16, 24, 48, 0.92);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 0, 128, 0.4);
+            box-shadow: 0 0 20px rgba(255, 0, 128, 0.2);
+        }
+
+        /* Dynamic Crosshair Styles */
         .crosshair-line {
             background-color: rgba(0, 240, 255, 0.95);
             box-shadow: 0 0 8px rgba(0, 240, 255, 0.9);
@@ -67,7 +74,9 @@
         /* Glow Effects */
         .bar-glow-hp { box-shadow: 0 0 12px rgba(255, 42, 109, 0.85); }
         .bar-glow-stamina { box-shadow: 0 0 12px rgba(0, 240, 255, 0.85); }
+        .bar-glow-mats { box-shadow: 0 0 12px rgba(255, 215, 0, 0.85); }
         .ability-glow-ready { box-shadow: 0 0 20px rgba(0, 240, 255, 0.85); }
+        .card-active { border-color: #00f0ff; box-shadow: 0 0 18px rgba(0, 240, 255, 0.6); }
 
         /* Screen Damage Vignette Flash */
         #damage-vignette {
@@ -77,7 +86,7 @@
             background: radial-gradient(circle, rgba(255,0,0,0) 35%, rgba(255, 0, 60, 0.8) 100%);
         }
 
-        /* Combo Popup Animation */
+        /* Animations */
         @keyframes comboPop {
             0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5) rotate(-5deg); }
             30% { opacity: 1; transform: translate(-50%, -50%) scale(1.25) rotate(0deg); }
@@ -89,7 +98,6 @@
             animation: comboPop 0.85s forwards cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
 
-        /* Wave Banner Announcement */
         @keyframes waveBannerAnim {
             0% { opacity: 0; transform: translate(-50%, -50%) scale(0.7); }
             15% { opacity: 1; transform: translate(-50%, -50%) scale(1.1); }
@@ -101,7 +109,6 @@
             animation: waveBannerAnim 2.2s forwards ease-in-out;
         }
 
-        /* Kill Feed Animations */
         @keyframes fadeUp {
             0% { opacity: 0; transform: translate(-50%, 12px) scale(0.9); }
             18% { opacity: 1; transform: translate(-50%, 0) scale(1.1); }
@@ -111,6 +118,18 @@
 
         .kill-feed-anim {
             animation: fadeUp 1.35s forwards ease-out;
+        }
+
+        /* Custom Scrollbars */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.3);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(0, 240, 255, 0.4);
+            border-radius: 3px;
         }
     </style>
 </head>
@@ -138,20 +157,25 @@
     </div>
 
     <!-- HUD Overlay -->
-    <div id="hud" class="absolute inset-0 z-20 pointer-events-none flex flex-col justify-between p-3 sm:p-6 hidden">
+    <div id="hud" class="absolute inset-0 z-20 pointer-events-none flex flex-col justify-between p-3 sm:p-5 hidden">
         
-        <!-- Top Info Header -->
-        <div class="flex justify-between items-start w-full">
-            <!-- Score & Kills -->
-            <div class="glass-panel rounded-xl p-2.5 sm:p-3 px-4 sm:px-5 flex items-center space-x-4 sm:space-x-6">
+        <!-- Top Header Info Row -->
+        <div class="flex justify-between items-start w-full pointer-events-auto">
+            <!-- Score & High Score & Kills -->
+            <div class="glass-panel rounded-xl p-2 sm:p-3 px-3 sm:px-5 flex items-center space-x-3 sm:space-x-5">
                 <div>
                     <div class="text-[9px] sm:text-[10px] uppercase tracking-widest text-cyan-400 font-bold">SCORE</div>
-                    <div id="score-val" class="text-xl sm:text-3xl font-orbitron font-black text-white">0</div>
+                    <div id="score-val" class="text-lg sm:text-2xl font-orbitron font-black text-white">0</div>
                 </div>
-                <div class="h-7 w-px bg-cyan-500/30"></div>
+                <div class="h-6 w-px bg-cyan-500/30"></div>
+                <div>
+                    <div class="text-[9px] sm:text-[10px] uppercase tracking-widest text-yellow-400 font-bold">HIGH SCORE</div>
+                    <div id="highscore-val" class="text-lg sm:text-2xl font-orbitron font-black text-yellow-300">0</div>
+                </div>
+                <div class="h-6 w-px bg-cyan-500/30"></div>
                 <div>
                     <div class="text-[9px] sm:text-[10px] uppercase tracking-widest text-pink-500 font-bold">KILLS</div>
-                    <div id="kills-val" class="text-xl sm:text-3xl font-orbitron font-black text-white">0</div>
+                    <div id="kills-val" class="text-lg sm:text-2xl font-orbitron font-black text-white">0</div>
                 </div>
             </div>
 
@@ -159,29 +183,30 @@
             <div class="glass-panel rounded-xl px-4 sm:px-6 py-2 text-center border-cyan-500/40 flex items-center space-x-4 sm:space-x-6">
                 <div>
                     <div class="text-[9px] sm:text-[10px] uppercase tracking-widest text-teal-400 font-bold">WAVE</div>
-                    <div id="wave-val" class="text-xl sm:text-3xl font-orbitron font-black text-teal-300">1</div>
+                    <div id="wave-val" class="text-lg sm:text-2xl font-orbitron font-black text-teal-300">1</div>
                 </div>
-                <div class="h-7 w-px bg-cyan-500/30"></div>
+                <div class="h-6 w-px bg-cyan-500/30"></div>
                 <div>
                     <div class="text-[9px] sm:text-[10px] uppercase tracking-widest text-red-400 font-bold">HOSTILES</div>
-                    <div id="enemies-val" class="text-xl sm:text-3xl font-orbitron font-bold text-red-500">0</div>
+                    <div id="enemies-val" class="text-lg sm:text-2xl font-orbitron font-bold text-red-500">0</div>
                 </div>
             </div>
 
-            <!-- Mode & Sensitivity Controls -->
-            <div class="glass-panel rounded-xl p-2.5 text-right text-xs text-gray-300 pointer-events-auto flex flex-col items-end space-y-1">
-                <div id="control-mode-tag" class="text-[9px] sm:text-[10px] uppercase font-bold text-cyan-400">Mode: Active</div>
-                <div class="flex items-center space-x-2">
-                    <span class="text-[9px] sm:text-[10px] text-gray-400 font-bold">SENS</span>
-                    <input type="range" id="hud-sens-slider" min="0.0008" max="0.0050" step="0.0002" value="0.0022" class="w-16 sm:w-20 h-1 bg-cyan-900 rounded-lg appearance-none cursor-pointer">
-                </div>
+            <!-- Action Controls: Pause & Map Editor Buttons -->
+            <div class="flex items-center space-x-2">
+                <button id="hud-editor-btn" class="glass-panel p-2 px-3 rounded-xl border border-yellow-500/50 hover:bg-yellow-500/20 active:scale-95 transition-all text-yellow-300 font-orbitron font-bold text-xs flex items-center space-x-1">
+                    <span>⚙ MAP EDITOR</span>
+                </button>
+                <button id="hud-pause-btn" class="glass-panel p-2 px-3.5 rounded-xl border border-cyan-500/50 hover:bg-cyan-500/20 active:scale-95 transition-all text-cyan-300 font-orbitron font-bold text-xs">
+                    <span>⏸ PAUSE</span>
+                </button>
             </div>
         </div>
 
         <!-- Center Crosshair & Hit Marker -->
         <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
             <div id="crosshair" class="relative w-8 h-8 flex items-center justify-center">
-                <div class="w-1.5 h-1.5 bg-cyan-400 rounded-full shadow-[0_0_8px_#00f0ff]"></div>
+                <div id="crosshair-center-dot" class="w-1.5 h-1.5 bg-cyan-400 rounded-full shadow-[0_0_8px_#00f0ff]"></div>
                 <div class="crosshair-line crosshair-left absolute w-2.5 h-0.5 left-0 top-1/2 -translate-y-1/2"></div>
                 <div class="crosshair-line crosshair-right absolute w-2.5 h-0.5 right-0 top-1/2 -translate-y-1/2"></div>
                 <div class="crosshair-line crosshair-top absolute h-2.5 w-0.5 top-0 left-1/2 -translate-x-1/2"></div>
@@ -200,130 +225,295 @@
         <!-- Dynamic Kill Feed -->
         <div id="kill-feed-container" class="absolute left-1/2 top-2/3 -translate-x-1/2 pointer-events-none flex flex-col items-center"></div>
 
-        <!-- Bottom Controls & HUD Vitals Bar -->
-        <div class="w-full max-w-2xl mx-auto flex flex-col sm:flex-row items-center sm:items-end space-y-3 sm:space-y-0 sm:space-x-4">
-            
-            <!-- Left Side: Health & Stamina -->
-            <div class="w-full sm:flex-1 space-y-2">
-                <!-- Health Bar -->
-                <div>
-                    <div class="flex justify-between text-xs font-bold tracking-wider mb-1">
-                        <span class="text-pink-500 uppercase flex items-center">VITALITY</span>
-                        <span id="hp-text" class="text-pink-400 font-orbitron">100 / 100</span>
-                    </div>
-                    <div class="w-full h-3.5 bg-gray-950/80 rounded-full overflow-hidden border border-pink-500/30 p-0.5">
-                        <div id="hp-bar" class="h-full bg-gradient-to-r from-red-600 to-pink-500 rounded-full bar-glow-hp transition-all duration-150" style="width: 100%;"></div>
-                    </div>
-                </div>
+        <!-- Bottom Controls & Fortnite Building Deck HUD -->
+        <div class="w-full max-w-4xl mx-auto flex flex-col space-y-2 pointer-events-auto">
 
-                <!-- Stamina Bar -->
-                <div>
-                    <div class="flex justify-between text-xs font-bold tracking-wider mb-1">
-                        <span class="text-cyan-400 uppercase">STAMINA</span>
-                        <span id="stamina-text" class="text-cyan-400 font-orbitron">100%</span>
-                    </div>
-                    <div class="w-full h-2 bg-gray-950/80 rounded-full overflow-hidden border border-cyan-500/30 p-0.5">
-                        <div id="stamina-bar" class="h-full bg-cyan-400 rounded-full bar-glow-stamina transition-all duration-75" style="width: 100%;"></div>
-                    </div>
+            <!-- Fortnite Build & Weapon Deck Selector Hotbar -->
+            <div class="glass-panel p-2 rounded-2xl border border-cyan-500/40 flex items-center justify-between gap-1.5 sm:gap-3 bg-black/60">
+                
+                <!-- [1] Cyber Blade -->
+                <button id="deck-item-1" class="deck-btn flex-1 p-2 rounded-xl glass-panel border border-cyan-400 card-active transition-all text-center flex flex-col items-center justify-center cursor-pointer">
+                    <span class="text-[10px] font-orbitron font-black text-cyan-300 px-1.5 py-0.5 bg-cyan-950/80 rounded border border-cyan-500/50 mb-0.5">[1] / [Q]</span>
+                    <span class="text-xs font-orbitron font-bold text-white tracking-wide">BLADE</span>
+                    <span class="text-[9px] text-gray-400 font-semibold">Melee + Harvest</span>
+                </button>
+
+                <!-- [2] Wall -->
+                <button id="deck-item-2" class="deck-btn flex-1 p-2 rounded-xl glass-panel border border-white/10 transition-all text-center flex flex-col items-center justify-center cursor-pointer">
+                    <span class="text-[10px] font-orbitron font-black text-cyan-300 px-1.5 py-0.5 bg-cyan-950/80 rounded border border-cyan-500/50 mb-0.5">[2] / [Z]</span>
+                    <span class="text-xs font-orbitron font-bold text-white tracking-wide">WALL</span>
+                    <span class="text-[9px] text-yellow-400 font-bold">10 Mats</span>
+                </button>
+
+                <!-- [3] Ramp -->
+                <button id="deck-item-3" class="deck-btn flex-1 p-2 rounded-xl glass-panel border border-white/10 transition-all text-center flex flex-col items-center justify-center cursor-pointer">
+                    <span class="text-[10px] font-orbitron font-black text-cyan-300 px-1.5 py-0.5 bg-cyan-950/80 rounded border border-cyan-500/50 mb-0.5">[3] / [X]</span>
+                    <span class="text-xs font-orbitron font-bold text-white tracking-wide">RAMP</span>
+                    <span class="text-[9px] text-yellow-400 font-bold">10 Mats</span>
+                </button>
+
+                <!-- [4] Floor -->
+                <button id="deck-item-4" class="deck-btn flex-1 p-2 rounded-xl glass-panel border border-white/10 transition-all text-center flex flex-col items-center justify-center cursor-pointer">
+                    <span class="text-[10px] font-orbitron font-black text-cyan-300 px-1.5 py-0.5 bg-cyan-950/80 rounded border border-cyan-500/50 mb-0.5">[4] / [C]</span>
+                    <span class="text-xs font-orbitron font-bold text-white tracking-wide">FLOOR</span>
+                    <span class="text-[9px] text-yellow-400 font-bold">10 Mats</span>
+                </button>
+
+                <!-- Cyber Mats Counter Box -->
+                <div class="px-3 py-2 bg-yellow-950/40 border border-yellow-500/50 rounded-xl text-center min-w-[90px]">
+                    <div class="text-[9px] font-bold text-yellow-400 uppercase tracking-widest">CYBER MATS</div>
+                    <div id="mats-count-val" class="text-base sm:text-xl font-orbitron font-black text-yellow-300">500</div>
                 </div>
             </div>
 
-            <!-- Right Side: M1 Attack Button & Ability Card -->
-            <div class="flex items-center space-x-3 w-full sm:w-auto justify-between pointer-events-auto">
-                <button id="hud-m1-btn" class="flex-1 sm:flex-none glass-panel p-2.5 px-4 rounded-xl border border-pink-500/50 flex items-center space-x-2 bg-pink-950/40 hover:bg-pink-900/60 active:scale-95 transition-all">
-                    <span class="w-8 h-8 flex items-center justify-center bg-pink-500 text-black font-orbitron font-black text-xs rounded-lg shadow-[0_0_10px_rgba(255,0,85,0.8)]">M1</span>
-                    <div class="text-left">
-                        <div class="text-[9px] font-bold text-pink-300 uppercase">3-HIT COMBO</div>
-                        <div id="hud-combo-label" class="text-xs font-orbitron font-bold text-white">SLASH STRIKE</div>
-                    </div>
-                </button>
-
-                <button id="ability-card" class="flex-1 sm:flex-none glass-panel p-2.5 rounded-xl border border-cyan-500/40 flex items-center space-x-3 ability-glow-ready hover:bg-cyan-950/40 active:scale-95 transition-all text-left">
-                    <div class="relative w-9 h-9 flex items-center justify-center bg-cyan-950/80 border border-cyan-400/50 rounded-lg">
-                        <span class="font-orbitron font-black text-cyan-300 text-base">E</span>
-                        <div id="ability-cooldown-ring" class="absolute inset-0 rounded-lg bg-black/75 transition-all" style="clip-path: inset(0 0 0 0);"></div>
-                    </div>
+            <!-- Vitals Bar & Ability Card -->
+            <div class="flex flex-col sm:flex-row items-center justify-between gap-3">
+                <!-- Health & Stamina -->
+                <div class="w-full sm:flex-1 space-y-1.5">
+                    <!-- Health Bar -->
                     <div>
-                        <div class="text-[9px] uppercase font-bold text-gray-400 tracking-wider">SHOCKWAVE SLAM</div>
-                        <div id="ability-status" class="text-xs font-orbitron font-bold text-cyan-300 tracking-wide">READY</div>
-                        <div class="w-24 h-1 bg-gray-900 rounded-full mt-1 overflow-hidden border border-cyan-500/20">
-                            <div id="ability-bar" class="h-full bg-cyan-400 transition-all duration-100" style="width: 100%;"></div>
+                        <div class="flex justify-between text-xs font-bold tracking-wider mb-0.5">
+                            <span class="text-pink-500 uppercase flex items-center">VITALITY</span>
+                            <span id="hp-text" class="text-pink-400 font-orbitron">100 / 100</span>
+                        </div>
+                        <div class="w-full h-3 bg-gray-950/90 rounded-full overflow-hidden border border-pink-500/30 p-0.5">
+                            <div id="hp-bar" class="h-full bg-gradient-to-r from-red-600 to-pink-500 rounded-full bar-glow-hp transition-all duration-150" style="width: 100%;"></div>
                         </div>
                     </div>
-                </button>
+
+                    <!-- Stamina Bar -->
+                    <div>
+                        <div class="flex justify-between text-xs font-bold tracking-wider mb-0.5">
+                            <span class="text-cyan-400 uppercase">STAMINA</span>
+                            <span id="stamina-text" class="text-cyan-400 font-orbitron">100%</span>
+                        </div>
+                        <div class="w-full h-2 bg-gray-950/90 rounded-full overflow-hidden border border-cyan-500/30 p-0.5">
+                            <div id="stamina-bar" class="h-full bg-cyan-400 rounded-full bar-glow-stamina transition-all duration-75" style="width: 100%;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Ability & Attack Trigger Cards -->
+                <div class="flex items-center space-x-2 w-full sm:w-auto justify-between">
+                    <button id="hud-m1-btn" class="flex-1 sm:flex-none glass-panel p-2 px-3 rounded-xl border border-pink-500/50 flex items-center space-x-2 bg-pink-950/40 hover:bg-pink-900/60 active:scale-95 transition-all">
+                        <span class="w-7 h-7 flex items-center justify-center bg-pink-500 text-black font-orbitron font-black text-xs rounded-lg shadow-[0_0_10px_rgba(255,0,85,0.8)]">M1</span>
+                        <div class="text-left">
+                            <div class="text-[9px] font-bold text-pink-300 uppercase">ATTACK / BUILD</div>
+                            <div id="hud-combo-label" class="text-xs font-orbitron font-bold text-white">3-HIT COMBO</div>
+                        </div>
+                    </button>
+
+                    <button id="ability-card" class="flex-1 sm:flex-none glass-panel p-2 px-3 rounded-xl border border-cyan-500/40 flex items-center space-x-2.5 ability-glow-ready hover:bg-cyan-950/40 active:scale-95 transition-all text-left">
+                        <div class="relative w-8 h-8 flex items-center justify-center bg-cyan-950/80 border border-cyan-400/50 rounded-lg">
+                            <span class="font-orbitron font-black text-cyan-300 text-sm">E</span>
+                            <div id="ability-cooldown-ring" class="absolute inset-0 rounded-lg bg-black/75 transition-all" style="clip-path: inset(0 0 0 0);"></div>
+                        </div>
+                        <div>
+                            <div class="text-[9px] uppercase font-bold text-gray-400 tracking-wider">SHOCKWAVE SLAM</div>
+                            <div id="ability-status" class="text-xs font-orbitron font-bold text-cyan-300 tracking-wide">READY</div>
+                            <div class="w-20 h-1 bg-gray-900 rounded-full mt-0.5 overflow-hidden border border-cyan-500/20">
+                                <div id="ability-bar" class="h-full bg-cyan-400 transition-all duration-100" style="width: 100%;"></div>
+                            </div>
+                        </div>
+                    </button>
+                </div>
             </div>
 
         </div>
     </div>
 
-    <!-- Start / Controls Screen Overlay -->
-    <div id="start-overlay" class="absolute inset-0 z-30 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
-        <div class="glass-panel max-w-lg w-full rounded-2xl p-6 sm:p-8 text-center border-cyan-500/40 relative overflow-hidden">
+    <!-- Start / Welcome Screen Overlay -->
+    <div id="start-overlay" class="absolute inset-0 z-30 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md">
+        <div class="glass-panel max-w-xl w-full rounded-2xl p-6 sm:p-8 text-center border-cyan-500/40 relative overflow-hidden max-h-[90vh] overflow-y-auto">
             <div class="absolute -top-12 -left-12 w-32 h-32 bg-cyan-500/20 rounded-full blur-3xl pointer-events-none"></div>
             <div class="absolute -bottom-12 -right-12 w-32 h-32 bg-pink-500/20 rounded-full blur-3xl pointer-events-none"></div>
 
             <h1 class="text-3xl sm:text-4xl font-orbitron font-black tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-teal-200 to-pink-500 mb-1">
                 CYBER BATTLEGROUNDS
             </h1>
-            <p class="text-gray-400 text-xs uppercase tracking-widest font-semibold mb-5">Sunlit 200x200 Arena Melee combat</p>
+            <p class="text-yellow-400 text-xs font-orbitron uppercase tracking-widest font-bold mb-4">Fortnite Builder & Combat Arena</p>
 
-            <!-- Sensitivity Adjustment Box -->
-            <div class="bg-black/40 rounded-xl p-3 border border-white/10 mb-4 flex items-center justify-between text-xs">
-                <span class="text-gray-300 font-bold uppercase">Mouse Sensitivity:</span>
-                <div class="flex items-center space-x-3">
-                    <input type="range" id="menu-sens-slider" min="0.0008" max="0.0050" step="0.0002" value="0.0022" class="w-28 sm:w-36 h-1.5 bg-cyan-900 rounded-lg appearance-none cursor-pointer">
-                    <span id="sens-val-display" class="font-orbitron text-cyan-400 font-bold w-10 text-right">0.0022</span>
-                </div>
-            </div>
-
-            <!-- Keybind Guide -->
-            <div class="space-y-2 text-left bg-black/50 rounded-xl p-4 border border-white/10 mb-6 text-xs sm:text-sm text-gray-300">
+            <!-- Keybind Guide Grid -->
+            <div class="space-y-2 text-left bg-black/50 rounded-xl p-4 border border-white/10 mb-5 text-xs sm:text-sm text-gray-300">
                 <div class="flex justify-between items-center border-b border-white/10 pb-1.5">
-                    <span class="text-gray-400">3-Hit Blade Combo:</span>
-                    <span class="text-pink-400 font-bold font-orbitron">M1 Click (35 / 45 / 90 DMG)</span>
+                    <span class="text-gray-400">Cyber Energy Blade (M1):</span>
+                    <span class="text-pink-400 font-bold font-orbitron">3-Hit Combo (35/45/90 DMG)</span>
                 </div>
                 <div class="flex justify-between items-center border-b border-white/10 pb-1.5">
-                    <span class="text-gray-400">Cyber Shockwave Slam:</span>
-                    <span class="text-cyan-400 font-bold font-orbitron">Key [E] (120 AOE DMG)</span>
+                    <span class="text-gray-400">Harvesting Materials:</span>
+                    <span class="text-yellow-300 font-bold font-orbitron">Strike Cover Crates (+20 Mats)</span>
+                </div>
+                <div class="flex justify-between items-center border-b border-white/10 pb-1.5">
+                    <span class="text-gray-400">Fortnite Building Modes:</span>
+                    <span class="text-cyan-400 font-bold font-orbitron">[1] Blade | [2] Wall | [3] Ramp | [4] Floor</span>
+                </div>
+                <div class="flex justify-between items-center border-b border-white/10 pb-1.5">
+                    <span class="text-gray-400">Shockwave Slam:</span>
+                    <span class="text-cyan-400 font-bold font-orbitron">Key [E] (120 AOE DMG + Knockback)</span>
                 </div>
                 <div class="flex justify-between items-center border-b border-white/10 pb-1.5">
                     <span class="text-gray-400">Movement & Ramps:</span>
-                    <span class="text-cyan-400 font-bold font-orbitron">WASD / Arrow Keys</span>
-                </div>
-                <div class="flex justify-between items-center border-b border-white/10 pb-1.5">
-                    <span class="text-gray-400">Camera Aiming:</span>
-                    <span class="text-cyan-400 font-bold font-orbitron">Mouse Look / Drag</span>
+                    <span class="text-cyan-400 font-bold font-orbitron">WASD / Shift (Sprint) / Space (Jump)</span>
                 </div>
                 <div class="flex justify-between items-center">
-                    <span class="text-gray-400">Sprint & Jump:</span>
-                    <span class="text-cyan-400 font-bold font-orbitron">Shift (Sprint) / Space (Jump)</span>
+                    <span class="text-gray-400">Pause / Settings Menu:</span>
+                    <span class="text-cyan-400 font-bold font-orbitron">Key [P] or [ESC]</span>
                 </div>
             </div>
 
             <button id="play-btn" class="w-full py-4 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-black font-orbitron font-black tracking-widest rounded-xl shadow-[0_0_20px_rgba(0,240,255,0.4)] transform hover:scale-[1.02] active:scale-[0.98] transition-all duration-150 uppercase text-base sm:text-lg">
-                ENTER SUNLIT ARENA
+                ENTER ARENA BATTLEGROUND
+            </button>
+        </div>
+    </div>
+
+    <!-- Pause Menu Modal -->
+    <div id="pause-modal" class="absolute inset-0 z-40 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md hidden">
+        <div class="glass-panel max-w-md w-full rounded-2xl p-6 text-center border-cyan-500/50 relative">
+            <h2 class="text-3xl font-orbitron font-black text-cyan-400 tracking-wider mb-1">SYSTEM PAUSED</h2>
+            <p class="text-gray-400 text-xs uppercase tracking-widest mb-4">Battle simulation suspended</p>
+
+            <div class="grid grid-cols-2 gap-3 mb-5">
+                <div class="bg-black/50 p-3 rounded-xl border border-white/10">
+                    <div class="text-[9px] text-gray-400 uppercase font-bold">CURRENT SCORE</div>
+                    <div id="pause-score" class="text-xl font-orbitron font-bold text-white">0</div>
+                </div>
+                <div class="bg-black/50 p-3 rounded-xl border border-white/10">
+                    <div class="text-[9px] text-gray-400 uppercase font-bold">HIGH SCORE</div>
+                    <div id="pause-highscore" class="text-xl font-orbitron font-bold text-yellow-300">0</div>
+                </div>
+            </div>
+
+            <div class="space-y-2.5">
+                <button id="pause-resume-btn" class="w-full py-3 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-black font-orbitron font-black tracking-wider rounded-xl uppercase">
+                    RESUME GAME
+                </button>
+                <button id="pause-settings-btn" class="w-full py-3 glass-panel border border-cyan-500/40 text-cyan-300 font-orbitron font-bold rounded-xl hover:bg-cyan-950/40 uppercase">
+                    SETTINGS & CONTROLS
+                </button>
+
+                <button id="pause-restart-btn" class="w-full py-3 glass-panel border border-red-500/40 text-red-400 font-orbitron font-bold rounded-xl hover:bg-red-950/40 uppercase">
+                    RESTART BATTLE
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Map Editor Modal -->
+    <div id="map-editor-modal" class="absolute inset-0 z-40 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md hidden">
+        <div class="glass-panel max-w-md w-full rounded-2xl p-6 text-center border-yellow-500/50">
+            <h2 class="text-3xl font-orbitron font-black text-yellow-400 tracking-wider mb-1">MAP EDITOR & LAYOUT</h2>
+            <p class="text-gray-400 text-xs uppercase tracking-widest mb-4">Manage custom Fortnite structures</p>
+
+            <div class="bg-black/50 p-3 rounded-xl border border-white/10 mb-4 text-left space-y-2 text-xs">
+                <div class="flex justify-between">
+                    <span class="text-gray-400">Structures Placed:</span>
+                    <span id="editor-struct-count" class="font-orbitron text-yellow-300 font-bold">0</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-400">Custom Mode:</span>
+                    <span id="editor-mode-status" class="font-orbitron text-cyan-400 font-bold">WAVE BATTLE MODE</span>
+                </div>
+            </div>
+
+            <div class="space-y-2.5">
+                <button id="editor-toggle-mode-btn" class="w-full py-2.5 bg-gradient-to-r from-teal-500 to-cyan-600 text-black font-orbitron font-bold rounded-xl uppercase">
+                    TOGGLE CREATIVE BUILD MODE
+                </button>
+                <div class="grid grid-cols-2 gap-2">
+                    <button id="editor-save-btn" class="py-2.5 glass-panel border border-green-500/50 text-green-400 font-orbitron font-bold rounded-xl hover:bg-green-950/40">
+                        💾 SAVE MAP
+                    </button>
+                    <button id="editor-load-btn" class="py-2.5 glass-panel border border-cyan-500/50 text-cyan-300 font-orbitron font-bold rounded-xl hover:bg-cyan-950/40">
+                        📂 LOAD MAP
+                    </button>
+                </div>
+                <button id="editor-clear-btn" class="w-full py-2.5 glass-panel border border-red-500/50 text-red-400 font-orbitron font-bold rounded-xl hover:bg-red-950/40 uppercase">
+                    🗑 CLEAR ALL BUILDINGS
+                </button>
+                <button id="editor-close-btn" class="w-full py-2 bg-gray-800 text-gray-300 font-orbitron font-bold rounded-xl uppercase">
+                    CLOSE EDITOR
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settings-modal" class="absolute inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md hidden">
+        <div class="glass-panel max-w-lg w-full rounded-2xl p-6 text-center border-cyan-500/50 relative max-h-[90vh] overflow-y-auto">
+            <h2 class="text-2xl font-orbitron font-black text-cyan-400 tracking-wider mb-4">SETTINGS & PREFERENCES</h2>
+
+            <div class="space-y-4 text-left text-xs sm:text-sm">
+                <!-- Sensitivity Slider -->
+                <div class="bg-black/40 p-3 rounded-xl border border-white/10 flex items-center justify-between">
+                    <span class="text-gray-300 font-bold">Mouse Sensitivity:</span>
+                    <div class="flex items-center space-x-3">
+                        <input type="range" id="setting-sens" min="0.0005" max="0.0060" step="0.0002" value="0.0022" class="w-28 h-1.5 bg-cyan-900 rounded-lg appearance-none cursor-pointer">
+                        <span id="setting-sens-val" class="font-orbitron text-cyan-400 font-bold w-12 text-right">0.0022</span>
+                    </div>
+                </div>
+
+                <!-- Sound Volume -->
+                <div class="bg-black/40 p-3 rounded-xl border border-white/10 flex items-center justify-between">
+                    <span class="text-gray-300 font-bold">Audio SFX Volume:</span>
+                    <div class="flex items-center space-x-3">
+                        <input type="range" id="setting-vol" min="0" max="1" step="0.05" value="0.8" class="w-28 h-1.5 bg-cyan-900 rounded-lg appearance-none cursor-pointer">
+                        <span id="setting-vol-val" class="font-orbitron text-cyan-400 font-bold w-12 text-right">80%</span>
+                    </div>
+                </div>
+
+                <!-- Graphics Quality -->
+                <div class="bg-black/40 p-3 rounded-xl border border-white/10 flex items-center justify-between">
+                    <span class="text-gray-300 font-bold">Shadows & Atmosphere:</span>
+                    <select id="setting-graphics" class="bg-black border border-cyan-500/50 text-cyan-300 font-orbitron rounded-lg p-1.5 text-xs">
+                        <option value="high">High (Soft Shadows)</option>
+                        <option value="low">Low (Fast Performance)</option>
+                    </select>
+                </div>
+
+                <!-- Infinite Mats Toggle -->
+                <div class="bg-black/40 p-3 rounded-xl border border-white/10 flex items-center justify-between">
+                    <span class="text-gray-300 font-bold">Infinite Building Materials:</span>
+                    <button id="setting-inf-mats-btn" class="px-3 py-1.5 bg-gray-800 text-gray-300 font-orbitron font-bold rounded-lg border border-white/20">
+                        OFF
+                    </button>
+                </div>
+
+                <!-- Crosshair Reticle Style -->
+                <div class="bg-black/40 p-3 rounded-xl border border-white/10 flex items-center justify-between">
+                    <span class="text-gray-300 font-bold">Crosshair Style:</span>
+                    <select id="setting-crosshair" class="bg-black border border-cyan-500/50 text-cyan-300 font-orbitron rounded-lg p-1.5 text-xs">
+                        <option value="default">Default Plus</option>
+                        <option value="dot">Center Dot</option>
+                        <option value="circle">Cyber Circle</option>
+                    </select>
+                </div>
+            </div>
+
+            <button id="settings-close-btn" class="w-full mt-5 py-3 bg-gradient-to-r from-cyan-500 to-blue-600 text-black font-orbitron font-black tracking-wider rounded-xl uppercase">
+                SAVE & BACK
             </button>
         </div>
     </div>
 
     <!-- Game Over Overlay -->
-    <div id="game-over-overlay" class="absolute inset-0 z-40 flex items-center justify-center p-4 bg-black/90 backdrop-blur-lg hidden">
+    <div id="game-over-overlay" class="absolute inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-lg hidden">
         <div class="glass-panel max-w-md w-full rounded-2xl p-8 text-center border-red-500/50">
             <h2 class="text-4xl sm:text-5xl font-orbitron font-black text-red-500 tracking-wider mb-1">ELIMINATED</h2>
-            <p class="text-gray-400 text-xs uppercase tracking-widest mb-6">Hostiles overwhelmed your defenses</p>
+            <p class="text-gray-400 text-xs uppercase tracking-widest mb-6">Hostiles overwhelmed your cyber defenses</p>
 
-            <div class="grid grid-cols-3 gap-3 mb-6">
+            <div class="grid grid-cols-3 gap-2.5 mb-6">
                 <div class="bg-black/50 p-3 rounded-xl border border-white/10">
                     <div class="text-[9px] text-gray-400 uppercase font-bold">SCORE</div>
-                    <div id="final-score" class="text-2xl font-orbitron font-bold text-cyan-400">0</div>
+                    <div id="final-score" class="text-xl font-orbitron font-bold text-cyan-400">0</div>
+                </div>
+                <div class="bg-black/50 p-3 rounded-xl border border-white/10">
+                    <div class="text-[9px] text-gray-400 uppercase font-bold">HIGH SCORE</div>
+                    <div id="final-highscore" class="text-xl font-orbitron font-bold text-yellow-300">0</div>
                 </div>
                 <div class="bg-black/50 p-3 rounded-xl border border-white/10">
                     <div class="text-[9px] text-gray-400 uppercase font-bold">KILLS</div>
-                    <div id="final-kills" class="text-2xl font-orbitron font-bold text-pink-500">0</div>
-                </div>
-                <div class="bg-black/50 p-3 rounded-xl border border-white/10">
-                    <div class="text-[9px] text-gray-400 uppercase font-bold">WAVE</div>
-                    <div id="final-wave" class="text-2xl font-orbitron font-bold text-teal-400">1</div>
+                    <div id="final-kills" class="text-xl font-orbitron font-bold text-pink-500">0</div>
                 </div>
             </div>
 
@@ -338,7 +528,10 @@
          *  SYNTHESIZED AUDIO ENGINE (Web Audio API)
          * ========================================================================= */
         class SoundEngine {
-            constructor() { this.ctx = null; }
+            constructor() {
+                this.ctx = null;
+                this.volume = 0.8;
+            }
 
             init() {
                 if (!this.ctx) {
@@ -350,124 +543,143 @@
                 }
             }
 
+            setVolume(v) { this.volume = parseFloat(v); }
+
             playSwingLight() {
-                if (!this.ctx) return;
+                if (!this.ctx || this.volume <= 0) return;
                 const now = this.ctx.currentTime;
                 const osc = this.ctx.createOscillator();
                 const gain = this.ctx.createGain();
                 osc.type = 'sine';
                 osc.frequency.setValueAtTime(650, now);
                 osc.frequency.exponentialRampToValueAtTime(160, now + 0.12);
-                gain.gain.setValueAtTime(0.35, now);
+                gain.gain.setValueAtTime(0.35 * this.volume, now);
                 gain.gain.exponentialRampToValueAtTime(0.01, now + 0.12);
                 osc.connect(gain); gain.connect(this.ctx.destination);
                 osc.start(now); osc.stop(now + 0.12);
             }
 
             playSwingMedium() {
-                if (!this.ctx) return;
+                if (!this.ctx || this.volume <= 0) return;
                 const now = this.ctx.currentTime;
                 const osc = this.ctx.createOscillator();
                 const gain = this.ctx.createGain();
                 osc.type = 'sawtooth';
                 osc.frequency.setValueAtTime(500, now);
                 osc.frequency.exponentialRampToValueAtTime(90, now + 0.16);
-                gain.gain.setValueAtTime(0.45, now);
+                gain.gain.setValueAtTime(0.45 * this.volume, now);
                 gain.gain.exponentialRampToValueAtTime(0.01, now + 0.16);
                 osc.connect(gain); gain.connect(this.ctx.destination);
                 osc.start(now); osc.stop(now + 0.16);
             }
 
             playSwingHeavy() {
-                if (!this.ctx) return;
+                if (!this.ctx || this.volume <= 0) return;
                 const now = this.ctx.currentTime;
-                // Sub Bass Heavy Punch
                 const osc = this.ctx.createOscillator();
                 const gain = this.ctx.createGain();
                 osc.type = 'sawtooth';
                 osc.frequency.setValueAtTime(350, now);
                 osc.frequency.exponentialRampToValueAtTime(30, now + 0.28);
-                gain.gain.setValueAtTime(0.75, now);
+                gain.gain.setValueAtTime(0.75 * this.volume, now);
                 gain.gain.exponentialRampToValueAtTime(0.01, now + 0.28);
                 osc.connect(gain); gain.connect(this.ctx.destination);
                 osc.start(now); osc.stop(now + 0.28);
             }
 
             playHit() {
-                if (!this.ctx) return;
+                if (!this.ctx || this.volume <= 0) return;
                 const now = this.ctx.currentTime;
                 const osc = this.ctx.createOscillator();
                 const gain = this.ctx.createGain();
                 osc.type = 'triangle';
                 osc.frequency.setValueAtTime(320, now);
                 osc.frequency.exponentialRampToValueAtTime(40, now + 0.14);
-                gain.gain.setValueAtTime(0.6, now);
+                gain.gain.setValueAtTime(0.6 * this.volume, now);
                 gain.gain.exponentialRampToValueAtTime(0.01, now + 0.14);
                 osc.connect(gain); gain.connect(this.ctx.destination);
                 osc.start(now); osc.stop(now + 0.14);
             }
 
+            playHarvest() {
+                if (!this.ctx || this.volume <= 0) return;
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(440, now);
+                osc.frequency.exponentialRampToValueAtTime(880, now + 0.1);
+                gain.gain.setValueAtTime(0.4 * this.volume, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+                osc.connect(gain); gain.connect(this.ctx.destination);
+                osc.start(now); osc.stop(now + 0.1);
+            }
+
+            playBuildPlace() {
+                if (!this.ctx || this.volume <= 0) return;
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(300, now);
+                osc.frequency.linearRampToValueAtTime(750, now + 0.15);
+                gain.gain.setValueAtTime(0.5 * this.volume, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+                osc.connect(gain); gain.connect(this.ctx.destination);
+                osc.start(now); osc.stop(now + 0.15);
+            }
+
             playShockwave() {
-                if (!this.ctx) return;
+                if (!this.ctx || this.volume <= 0) return;
                 const now = this.ctx.currentTime;
                 const osc1 = this.ctx.createOscillator();
                 const gain1 = this.ctx.createGain();
                 osc1.type = 'sawtooth';
                 osc1.frequency.setValueAtTime(240, now);
                 osc1.frequency.exponentialRampToValueAtTime(20, now + 0.6);
-                gain1.gain.setValueAtTime(0.8, now);
+                gain1.gain.setValueAtTime(0.8 * this.volume, now);
                 gain1.gain.exponentialRampToValueAtTime(0.01, now + 0.6);
                 osc1.connect(gain1); gain1.connect(this.ctx.destination);
                 osc1.start(now); osc1.stop(now + 0.6);
-
-                const osc2 = this.ctx.createOscillator();
-                const gain2 = this.ctx.createGain();
-                osc2.type = 'sine';
-                osc2.frequency.setValueAtTime(180, now);
-                osc2.frequency.exponentialRampToValueAtTime(950, now + 0.35);
-                gain2.gain.setValueAtTime(0.45, now);
-                gain2.gain.exponentialRampToValueAtTime(0.01, now + 0.35);
-                osc2.connect(gain2); gain2.connect(this.ctx.destination);
-                osc2.start(now); osc2.stop(now + 0.35);
             }
 
             playJump() {
-                if (!this.ctx) return;
+                if (!this.ctx || this.volume <= 0) return;
                 const now = this.ctx.currentTime;
                 const osc = this.ctx.createOscillator();
                 const gain = this.ctx.createGain();
                 osc.type = 'sine';
                 osc.frequency.setValueAtTime(160, now);
                 osc.frequency.exponentialRampToValueAtTime(420, now + 0.15);
-                gain.gain.setValueAtTime(0.25, now);
+                gain.gain.setValueAtTime(0.25 * this.volume, now);
                 gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
                 osc.connect(gain); gain.connect(this.ctx.destination);
                 osc.start(now); osc.stop(now + 0.15);
             }
 
             playEnemyDeath() {
-                if (!this.ctx) return;
+                if (!this.ctx || this.volume <= 0) return;
                 const now = this.ctx.currentTime;
                 const osc = this.ctx.createOscillator();
                 const gain = this.ctx.createGain();
                 osc.type = 'sawtooth';
                 osc.frequency.setValueAtTime(220, now);
                 osc.frequency.exponentialRampToValueAtTime(20, now + 0.4);
-                gain.gain.setValueAtTime(0.55, now);
+                gain.gain.setValueAtTime(0.55 * this.volume, now);
                 gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
                 osc.connect(gain); gain.connect(this.ctx.destination);
                 osc.start(now); osc.stop(now + 0.4);
             }
 
             playHurt() {
-                if (!this.ctx) return;
+                if (!this.ctx || this.volume <= 0) return;
                 const now = this.ctx.currentTime;
                 const osc = this.ctx.createOscillator();
                 const gain = this.ctx.createGain();
                 osc.type = 'square';
                 osc.frequency.setValueAtTime(180, now);
                 osc.frequency.linearRampToValueAtTime(35, now + 0.22);
-                gain.gain.setValueAtTime(0.45, now);
+                gain.gain.setValueAtTime(0.45 * this.volume, now);
                 gain.gain.exponentialRampToValueAtTime(0.01, now + 0.22);
                 osc.connect(gain); gain.connect(this.ctx.destination);
                 osc.start(now); osc.stop(now + 0.22);
@@ -477,7 +689,23 @@
         const audio = new SoundEngine();
 
         /* =========================================================================
-         *  PROCEDURAL HIGH-TECH GRID TEXTURE
+         *  HIGH SCORE SYSTEM
+         * ========================================================================= */
+        function getSavedHighScore() {
+            return parseInt(localStorage.getItem('cyber_battlegrounds_highscore') || '0', 10);
+        }
+
+        function saveHighScore(score) {
+            const current = getSavedHighScore();
+            if (score > current) {
+                localStorage.setItem('cyber_battlegrounds_highscore', score.toString());
+                return score;
+            }
+            return current;
+        }
+
+        /* =========================================================================
+         *  HIGH-TECH GRID TEXTURE GENERATOR
          * ========================================================================= */
         function createGridTexture() {
             const canvas = document.createElement('canvas');
@@ -513,11 +741,11 @@
         }
 
         /* =========================================================================
-         *  THREE.JS SCENE SETUP & SUNLIT ATMOSPHERE
+         *  THREE.JS SCENE SETUP & ATMOSPHERE
          * ========================================================================= */
         const container = document.getElementById('canvas-container');
         const scene = new THREE.Scene();
-        
+
         // Bright Atmospheric Sky background & fog
         scene.background = new THREE.Color(0x87ceeb);
         scene.fog = new THREE.FogExp2(0xa0e0ff, 0.007);
@@ -553,7 +781,7 @@
         scene.add(sunLight);
 
         /* =========================================================================
-         *  MAP & TERRAIN (200x200 ARENA + RAISED PLATFORM & RAMPS)
+         *  MAP & TERRAIN (200x200 ARENA + RAISED PLATFORM & COVER CRATES)
          * ========================================================================= */
         const arenaSize = 200;
         const floorGeo = new THREE.PlaneGeometry(arenaSize, arenaSize);
@@ -585,7 +813,6 @@
             scene.add(wall);
         });
 
-        // Obstacle Boxes for AI Avoidance & Physics Collision
         const obstacles = [];
 
         // Central Raised Platform (40x40, height 3.5)
@@ -604,7 +831,7 @@
         trim.position.set(0, platHeight, 0);
         scene.add(trim);
 
-        // Ramps Setup (North, South, East, West)
+        // Ramps Setup
         const rampLength = 12;
         const rampWidth = 8;
         const rampAngle = Math.atan2(platHeight, rampLength);
@@ -623,12 +850,241 @@
             scene.add(rampGroup);
         }
 
-        createRamp(0, -20 - rampLength / 2, 0);                 // North Ramp
-        createRamp(0, 20 + rampLength / 2, Math.PI);           // South Ramp
-        createRamp(-20 - rampLength / 2, 0, -Math.PI / 2);     // West Ramp
-        createRamp(20 + rampLength / 2, 0, Math.PI / 2);      // East Ramp
+        createRamp(0, -20 - rampLength / 2, 0);
+        createRamp(0, 20 + rampLength / 2, Math.PI);
+        createRamp(-20 - rampLength / 2, 0, -Math.PI / 2);
+        createRamp(20 + rampLength / 2, 0, Math.PI / 2);
 
-        // Function to check terrain elevation (flat ground vs raised platform vs ramps)
+        // Harvestable Cover Crates
+        const crateMat = new THREE.MeshStandardMaterial({ color: 0x121e33, roughness: 0.3, metalness: 0.7 });
+        const harvestableCrates = [];
+
+        function createCrate(x, z, sx, sy, sz) {
+            const crateGroup = new THREE.Group();
+            const mainMesh = new THREE.Mesh(new THREE.BoxGeometry(sx, sy, sz), crateMat);
+            const baseElevation = getTerrainHeight(x, z);
+            mainMesh.position.y = baseElevation + sy / 2;
+            mainMesh.castShadow = true;
+            mainMesh.receiveShadow = true;
+            crateGroup.add(mainMesh);
+
+            const stripe = new THREE.Mesh(new THREE.BoxGeometry(sx + 0.05, 0.2, sz + 0.05), trimMat);
+            stripe.position.y = baseElevation + sy / 2;
+            crateGroup.add(stripe);
+
+            crateGroup.position.set(x, 0, z);
+            scene.add(crateGroup);
+
+            const crateObj = {
+                mesh: crateGroup,
+                x, z, sx, sy, sz,
+                hp: 80,
+                maxHp: 80
+            };
+
+            harvestableCrates.push(crateObj);
+
+            obstacles.push({
+                minX: x - sx / 2 - 0.8,
+                maxX: x + sx / 2 + 0.8,
+                minZ: z - sz / 2 - 0.8,
+                maxZ: z + sz / 2 + 0.8
+            });
+        }
+
+        createCrate(-10, -10, 4, 3, 4);
+        createCrate(10, 10, 4, 3, 4);
+        createCrate(-10, 10, 4, 3, 4);
+        createCrate(10, -10, 4, 3, 4);
+        createCrate(-40, -40, 6, 4, 6);
+        createCrate(40, -40, 6, 4, 6);
+        createCrate(-40, 40, 6, 4, 6);
+        createCrate(40, 40, 6, 4, 6);
+
+        /* =========================================================================
+         *  FORTNITE-STYLE BUILDING & HOLOGRAM PREVIEW SYSTEM
+         * ========================================================================= */
+        const buildState = {
+            activeType: 'blade', // 'blade', 'wall', 'ramp', 'floor'
+            mats: 500,
+            infiniteMats: false,
+            placedStructures: [],
+            gridSize: 4.0
+        };
+
+        const hologramMatValid = new THREE.MeshBasicMaterial({
+            color: 0x00f0ff,
+            transparent: true,
+            opacity: 0.45,
+            wireframe: false
+        });
+
+        const hologramMatInvalid = new THREE.MeshBasicMaterial({
+            color: 0xff0044,
+            transparent: true,
+            opacity: 0.45,
+            wireframe: false
+        });
+
+        // Hologram Mesh Container
+        const hologramGroup = new THREE.Group();
+        const wallHolo = new THREE.Mesh(new THREE.BoxGeometry(4, 4, 0.3), hologramMatValid);
+        const rampHolo = new THREE.Mesh(new THREE.BoxGeometry(4, 0.3, Math.hypot(4, 4)), hologramMatValid);
+        rampHolo.rotation.x = Math.atan2(4, 4);
+        const floorHolo = new THREE.Mesh(new THREE.BoxGeometry(4, 0.3, 4), hologramMatValid);
+
+        hologramGroup.add(wallHolo);
+        hologramGroup.add(rampHolo);
+        hologramGroup.add(floorHolo);
+        hologramGroup.visible = false;
+        scene.add(hologramGroup);
+
+        function setDeckActive(type) {
+            buildState.activeType = type;
+            document.querySelectorAll('.deck-btn').forEach(btn => btn.classList.remove('card-active'));
+
+            let activeBtnId = 'deck-item-1';
+            if (type === 'wall') activeBtnId = 'deck-item-2';
+            if (type === 'ramp') activeBtnId = 'deck-item-3';
+            if (type === 'floor') activeBtnId = 'deck-item-4';
+
+            document.getElementById(activeBtnId).classList.add('card-active');
+        }
+
+        // Hotkey selection
+        window.addEventListener('keydown', (e) => {
+            if (e.code === 'Digit1' || e.code === 'KeyQ') setDeckActive('blade');
+            if (e.code === 'Digit2' || e.code === 'KeyZ') setDeckActive('wall');
+            if (e.code === 'Digit3' || e.code === 'KeyX') setDeckActive('ramp');
+            if (e.code === 'Digit4' || e.code === 'KeyC') setDeckActive('floor');
+            if (e.code === 'KeyP' || e.code === 'Escape') togglePause();
+        });
+
+        document.getElementById('deck-item-1').addEventListener('click', () => setDeckActive('blade'));
+        document.getElementById('deck-item-2').addEventListener('click', () => setDeckActive('wall'));
+        document.getElementById('deck-item-3').addEventListener('click', () => setDeckActive('ramp'));
+        document.getElementById('deck-item-4').addEventListener('click', () => setDeckActive('floor'));
+
+        function getTargetBuildTransform() {
+            // Calculate grid position 4 units in front of player
+            const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
+            forward.y = 0;
+            forward.normalize();
+
+            const rawPos = player.pos.clone().addScaledVector(forward, 4.0);
+            const gx = Math.round(rawPos.x / 4) * 4;
+            const gz = Math.round(rawPos.z / 4) * 4;
+            const baseElev = getTerrainHeight(gx, gz);
+
+            // Cardinal direction alignment
+            let rotY = 0;
+            const angle = Math.atan2(forward.x, forward.z);
+            if (Math.abs(angle) < Math.PI / 4) rotY = Math.PI; // North
+            else if (angle >= Math.PI / 4 && angle < 3 * Math.PI / 4) rotY = Math.PI / 2; // East
+            else if (angle <= -Math.PI / 4 && angle > -3 * Math.PI / 4) rotY = -Math.PI / 2; // West
+            else rotY = 0; // South
+
+            let gy = baseElev + 2.0;
+            if (buildState.activeType === 'floor') gy = baseElev + 4.0;
+            if (buildState.activeType === 'ramp') gy = baseElev + 2.0;
+
+            return { x: gx, y: gy, z: gz, rotY };
+        }
+
+        function updateHologramPreview() {
+            if (buildState.activeType === 'blade' || !gameState.active) {
+                hologramGroup.visible = false;
+                return;
+            }
+
+            const tf = getTargetBuildTransform();
+            hologramGroup.position.set(tf.x, tf.y, tf.z);
+            hologramGroup.rotation.y = tf.rotY;
+            hologramGroup.visible = true;
+
+            wallHolo.visible = buildState.activeType === 'wall';
+            rampHolo.visible = buildState.activeType === 'ramp';
+            floorHolo.visible = buildState.activeType === 'floor';
+
+            const canAfford = buildState.infiniteMats || buildState.mats >= 10;
+            const activeMat = canAfford ? hologramMatValid : hologramMatInvalid;
+
+            wallHolo.material = activeMat;
+            rampHolo.material = activeMat;
+            floorHolo.material = activeMat;
+        }
+
+        function placeBuildingStructure() {
+            if (buildState.activeType === 'blade') return false;
+            if (!buildState.infiniteMats && buildState.mats < 10) {
+                showKillFeed("NOT ENOUGH MATS! (HARVEST CRATES)");
+                return false;
+            }
+
+            const tf = getTargetBuildTransform();
+
+            // Structure Visual Materials
+            const structMat = new THREE.MeshStandardMaterial({
+                color: 0x00f0ff,
+                emissive: 0x00f0ff,
+                emissiveIntensity: 0.35,
+                roughness: 0.2,
+                metalness: 0.8,
+                transparent: true,
+                opacity: 0.85
+            });
+
+            let mesh;
+            if (buildState.activeType === 'wall') {
+                mesh = new THREE.Mesh(new THREE.BoxGeometry(4, 4, 0.3), structMat);
+            } else if (buildState.activeType === 'ramp') {
+                mesh = new THREE.Mesh(new THREE.BoxGeometry(4, 0.3, Math.hypot(4, 4)), structMat);
+                mesh.rotation.x = Math.atan2(4, 4);
+            } else if (buildState.activeType === 'floor') {
+                mesh = new THREE.Mesh(new THREE.BoxGeometry(4, 0.3, 4), structMat);
+            }
+
+            mesh.position.set(tf.x, tf.y, tf.z);
+            mesh.rotation.y = tf.rotY;
+            mesh.castShadow = true;
+            mesh.receiveShadow = true;
+            scene.add(mesh);
+
+            audio.playBuildPlace();
+            createSparkBurst(mesh.position, 15, 0x00f0ff);
+
+            if (!buildState.infiniteMats) buildState.mats -= 10;
+            updateMatsHUD();
+
+            const structObj = {
+                type: buildState.activeType,
+                mesh,
+                x: tf.x, y: tf.y, z: tf.z,
+                rotY: tf.rotY,
+                hp: 150
+            };
+
+            buildState.placedStructures.push(structObj);
+
+            // Add collision bounds for AI obstacle avoidance
+            if (buildState.activeType === 'wall') {
+                obstacles.push({
+                    minX: tf.x - 2.2, maxX: tf.x + 2.2,
+                    minZ: tf.z - 2.2, maxZ: tf.z + 2.2
+                });
+            }
+
+            updateMapEditorUI();
+            return true;
+        }
+
+        function updateMatsHUD() {
+            document.getElementById('mats-count-val').innerText = buildState.infiniteMats ? "∞" : buildState.mats;
+        }
+
+        /* =========================================================================
+         *  TERRAIN & BUILDING ELEVATION CALCULATOR
+         * ========================================================================= */
         function getTerrainHeight(x, z) {
             // Central platform bounds
             if (Math.abs(x) <= 20 && Math.abs(z) <= 20) {
@@ -654,79 +1110,24 @@
                 const pct = ((20 + rampLength) - x) / rampLength;
                 return pct * platHeight;
             }
-            return 0; // Floor height
+
+            // Check Player-Built Structures (Ramps & Floors)
+            let extraHeight = 0;
+            for (const s of buildState.placedStructures) {
+                const dx = Math.abs(x - s.x);
+                const dz = Math.abs(z - s.z);
+
+                if (dx <= 2.0 && dz <= 2.0) {
+                    if (s.type === 'floor') {
+                        extraHeight = Math.max(extraHeight, s.y);
+                    } else if (s.type === 'ramp') {
+                        extraHeight = Math.max(extraHeight, s.y + 1.5);
+                    }
+                }
+            }
+
+            return Math.max(0, extraHeight);
         }
-
-        // Cover Crates & Surrounding Pillars
-        const crateMat = new THREE.MeshStandardMaterial({ color: 0x121e33, roughness: 0.3, metalness: 0.7 });
-        const pillarMat = new THREE.MeshStandardMaterial({ color: 0x0b1322, roughness: 0.2, metalness: 0.9 });
-
-        function createCrate(x, z, sx, sy, sz) {
-            const crateGroup = new THREE.Group();
-            const mainMesh = new THREE.Mesh(new THREE.BoxGeometry(sx, sy, sz), crateMat);
-            const baseElevation = getTerrainHeight(x, z);
-            mainMesh.position.y = baseElevation + sy / 2;
-            mainMesh.castShadow = true;
-            mainMesh.receiveShadow = true;
-            crateGroup.add(mainMesh);
-
-            const stripe = new THREE.Mesh(new THREE.BoxGeometry(sx + 0.05, 0.2, sz + 0.05), trimMat);
-            stripe.position.y = baseElevation + sy / 2;
-            crateGroup.add(stripe);
-
-            crateGroup.position.set(x, 0, z);
-            scene.add(crateGroup);
-
-            obstacles.push({
-                minX: x - sx / 2 - 0.8,
-                maxX: x + sx / 2 + 0.8,
-                minZ: z - sz / 2 - 0.8,
-                maxZ: z + sz / 2 + 0.8
-            });
-        }
-
-        function createPillar(x, z, r = 2.5, h = 16) {
-            const pillar = new THREE.Mesh(new THREE.CylinderGeometry(r, r, h, 12), pillarMat);
-            pillar.position.set(x, h / 2, z);
-            pillar.castShadow = true;
-            pillar.receiveShadow = true;
-            scene.add(pillar);
-
-            const ring = new THREE.Mesh(new THREE.TorusGeometry(r + 0.1, 0.15, 8, 24), trimMat);
-            ring.rotation.x = Math.PI / 2;
-            ring.position.set(x, h * 0.6, z);
-            scene.add(ring);
-
-            obstacles.push({
-                minX: x - r - 0.8,
-                maxX: x + r + 0.8,
-                minZ: z - r - 0.8,
-                maxZ: z + r + 0.8
-            });
-        }
-
-        // Add Pillars around Arena Radial
-        const pillarDist = 55;
-        for (let i = 0; i < 8; i++) {
-            const angle = (i / 8) * Math.PI * 2;
-            createPillar(Math.cos(angle) * pillarDist, Math.sin(angle) * pillarDist);
-        }
-
-        // Add Crates on Flat Ground and Raised Platform
-        createCrate(-10, -10, 4, 3, 4);
-        createCrate(10, 10, 4, 3, 4);
-        createCrate(-10, 10, 4, 3, 4);
-        createCrate(10, -10, 4, 3, 4);
-
-        createCrate(-40, -40, 6, 4, 6);
-        createCrate(40, -40, 6, 4, 6);
-        createCrate(-40, 40, 6, 4, 6);
-        createCrate(40, 40, 6, 4, 6);
-
-        createCrate(0, -60, 10, 4, 4);
-        createCrate(0, 60, 10, 4, 4);
-        createCrate(-60, 0, 4, 4, 10);
-        createCrate(60, 0, 4, 4, 10);
 
         /* =========================================================================
          *  WEAPON VIEWMODEL & VISUAL SLASH MESH
@@ -893,7 +1294,7 @@
 
         class EnemyBot {
             constructor(x, z, type = 'soldier', healthScale = 1.0) {
-                this.type = type; // 'assassin', 'soldier', 'juggernaut'
+                this.type = type;
                 this.knockbackVel = new THREE.Vector3();
                 this.attackCooldown = 0;
 
@@ -989,14 +1390,13 @@
                 this.hpBar.texture.needsUpdate = true;
             }
 
-            // Raycast / Steering Obstacle Avoidance Pathing
+            // Raycast & Obstacle Avoidance Pathing
             getSteeringDir(targetPos) {
                 const desired = new THREE.Vector3().subVectors(targetPos, this.mesh.position);
                 desired.y = 0;
                 if (desired.lengthSq() < 0.01) return desired.normalize();
                 desired.normalize();
 
-                // Test predicted future position
                 const futureX = this.mesh.position.x + desired.x * 2.5;
                 const futureZ = this.mesh.position.z + desired.z * 2.5;
 
@@ -1010,7 +1410,6 @@
 
                 if (!isBlocked) return desired;
 
-                // Alternate ray steering angles (45 deg & 90 deg)
                 const angles = [Math.PI / 4, -Math.PI / 4, Math.PI / 2, -Math.PI / 2];
                 for (const angle of angles) {
                     const altDir = desired.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), angle);
@@ -1032,12 +1431,10 @@
             update(delta, playerPos) {
                 if (this.hp <= 0) return;
 
-                // Hover oscillation & ring rotation
                 const baseElev = getTerrainHeight(this.mesh.position.x, this.mesh.position.z);
                 this.mesh.position.y = baseElev + 1.2 * this.scale + Math.sin(Date.now() * 0.004 + this.mesh.id) * 0.15;
                 this.ring.rotation.z += delta * 2.5;
 
-                // Knockback Physics Decay
                 if (this.knockbackVel.lengthSq() > 0.01) {
                     this.mesh.position.addScaledVector(this.knockbackVel, delta);
                     this.knockbackVel.multiplyScalar(Math.max(0, 1 - delta * 6.5));
@@ -1051,7 +1448,6 @@
                     const nextX = this.mesh.position.x + moveDir.x * this.speed * delta;
                     const nextZ = this.mesh.position.z + moveDir.z * this.speed * delta;
 
-                    // Bounds Check
                     const bound = arenaSize / 2 - 2;
                     if (Math.abs(nextX) < bound) this.mesh.position.x = nextX;
                     if (Math.abs(nextZ) < bound) this.mesh.position.z = nextZ;
@@ -1087,7 +1483,7 @@
         }
 
         /* =========================================================================
-         *  WAVE MANAGEMENT SYSTEM
+         *  WAVE MANAGEMENT SYSTEM & CREATIVE BUILD MODE
          * ========================================================================= */
         let waveNumber = 1;
 
@@ -1107,6 +1503,8 @@
         }
 
         function spawnEnemyWave() {
+            if (gameState.creativeBuildMode) return;
+
             const totalCount = 4 + (waveNumber - 1) * 3;
             const healthScale = 1.0 + (waveNumber - 1) * 0.2;
 
@@ -1118,7 +1516,6 @@
                 const spawnX = Math.cos(angle) * r;
                 const spawnZ = Math.sin(angle) * r;
 
-                // Select Class based on wave progression
                 let type = 'soldier';
                 const rand = Math.random();
                 if (waveNumber >= 2 && rand < 0.35) type = 'assassin';
@@ -1132,15 +1529,18 @@
         }
 
         function checkWaveProgression() {
+            if (gameState.creativeBuildMode) return;
+
             if (enemies.length === 0 && gameState.active) {
                 gameState.score += 400 * waveNumber;
                 waveNumber++;
+                saveHighScore(gameState.score);
                 setTimeout(spawnEnemyWave, 1400);
             }
         }
 
         /* =========================================================================
-         *  PLAYER CONTROLLER & 3-HIT COMBO SYSTEM
+         *  PLAYER CONTROLLER & COMBO SYSTEM
          * ========================================================================= */
         const player = {
             hp: 100, maxHp: 100,
@@ -1155,8 +1555,8 @@
         };
 
         const comboState = {
-            step: 0,           // 0, 1, 2, 3
-            timer: 0,          // Combo reset countdown (1.2s max)
+            step: 0,
+            timer: 0,
             maxWindow: 1.2,
             isAttacking: false,
             attackTimer: 0,
@@ -1176,20 +1576,49 @@
         let lastMouseX = 0, lastMouseY = 0;
         let cameraShakeTime = 0;
 
-        // Sensitivity Sliders Sync
-        const menuSensSlider = document.getElementById('menu-sens-slider');
-        const hudSensSlider = document.getElementById('hud-sens-slider');
-        const sensDisplay = document.getElementById('sens-val-display');
+        // Settings Sliders Sync
+        const settingSens = document.getElementById('setting-sens');
+        const settingSensVal = document.getElementById('setting-sens-val');
+        const settingVol = document.getElementById('setting-vol');
+        const settingVolVal = document.getElementById('setting-vol-val');
+        const settingGraphics = document.getElementById('setting-graphics');
+        const settingInfMatsBtn = document.getElementById('setting-inf-mats-btn');
+        const settingCrosshair = document.getElementById('setting-crosshair');
 
-        function setSensitivity(val) {
-            player.sensitivity = parseFloat(val);
-            menuSensSlider.value = val;
-            hudSensSlider.value = val;
-            sensDisplay.innerText = parseFloat(val).toFixed(4);
-        }
+        settingSens.addEventListener('input', (e) => {
+            player.sensitivity = parseFloat(e.target.value);
+            settingSensVal.innerText = player.sensitivity.toFixed(4);
+        });
 
-        menuSensSlider.addEventListener('input', (e) => setSensitivity(e.target.value));
-        hudSensSlider.addEventListener('input', (e) => setSensitivity(e.target.value));
+        settingVol.addEventListener('input', (e) => {
+            audio.setVolume(e.target.value);
+            settingVolVal.innerText = `${Math.round(e.target.value * 100)}%`;
+        });
+
+        settingGraphics.addEventListener('change', (e) => {
+            renderer.shadowMap.enabled = e.target.value === 'high';
+        });
+
+        settingInfMatsBtn.addEventListener('click', () => {
+            buildState.infiniteMats = !buildState.infiniteMats;
+            settingInfMatsBtn.innerText = buildState.infiniteMats ? "ON" : "OFF";
+            settingInfMatsBtn.className = buildState.infiniteMats ? 
+                "px-3 py-1.5 bg-yellow-500 text-black font-orbitron font-bold rounded-lg" : 
+                "px-3 py-1.5 bg-gray-800 text-gray-300 font-orbitron font-bold rounded-lg border border-white/20";
+            updateMatsHUD();
+        });
+
+        settingCrosshair.addEventListener('change', (e) => {
+            const crosshair = document.getElementById('crosshair');
+            const lines = crosshair.querySelectorAll('.crosshair-line');
+            if (e.target.value === 'dot') {
+                lines.forEach(l => l.style.display = 'none');
+            } else if (e.target.value === 'circle') {
+                lines.forEach(l => l.style.display = 'block');
+            } else {
+                lines.forEach(l => l.style.display = 'block');
+            }
+        });
 
         window.addEventListener('keydown', (e) => {
             keys[e.code] = true;
@@ -1198,7 +1627,7 @@
 
         window.addEventListener('keyup', (e) => keys[e.code] = false);
 
-        // ROTATION CONTROL (STRICT PITCH CLAMP BETWEEN -85° and +85°)
+        // Strict Pitch Clamped Rotation (-85° to +85°)
         function rotateCamera(deltaX, deltaY) {
             player.yaw -= deltaX * player.sensitivity;
             player.pitch -= deltaY * player.sensitivity;
@@ -1224,15 +1653,20 @@
         });
 
         /* =========================================================================
-         *  M1 3-HIT COMBO ATTACK MECHANICS
+         *  M1 PRIMARY ATTACK / FORTNITE BUILDING ACTION
          * ========================================================================= */
-        function triggerPrimaryAttack(e) {
-            if (!gameState.active) return;
-            if (e && e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON' || e.target.closest('button'))) {
+        function triggerPrimaryAction(e) {
+            if (!gameState.active || gameState.isPaused) return;
+            if (e && e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON' || e.target.closest('button') || e.target.closest('#hud'))) {
                 return;
             }
 
             audio.init();
+
+            if (buildState.activeType !== 'blade') {
+                placeBuildingStructure();
+                return;
+            }
 
             if (!comboState.isAttacking) {
                 executeNextComboHit();
@@ -1244,7 +1678,7 @@
                 isMouseDown = true;
                 lastMouseX = e.clientX;
                 lastMouseY = e.clientY;
-                triggerPrimaryAttack(e);
+                triggerPrimaryAction(e);
             }
         });
 
@@ -1254,7 +1688,11 @@
         document.getElementById('hud-m1-btn').addEventListener('click', (e) => {
             e.stopPropagation();
             audio.init();
-            if (!comboState.isAttacking && gameState.active) executeNextComboHit();
+            if (buildState.activeType !== 'blade') {
+                placeBuildingStructure();
+            } else if (!comboState.isAttacking && gameState.active) {
+                executeNextComboHit();
+            }
         });
 
         document.getElementById('ability-card').addEventListener('click', (e) => {
@@ -1263,7 +1701,7 @@
             triggerShockwave();
         });
 
-        function showComboPopupText(text, colorClass = "from-yellow-300 via-pink-500 to-cyan-400") {
+        function showComboPopupText(text) {
             const popup = document.getElementById('combo-popup');
             const popupText = document.getElementById('combo-popup-text');
 
@@ -1287,7 +1725,6 @@
             document.getElementById('crosshair').classList.add('expanded');
 
             if (comboState.step === 1) {
-                // Hit 1: Quick Diagonal Slash
                 damage = 35;
                 comboState.attackDuration = 0.18;
                 audio.playSwingLight();
@@ -1296,7 +1733,6 @@
                 slashMat.color.setHex(0x00f0ff);
                 showComboPopupText("1-HIT SLASH!");
             } else if (comboState.step === 2) {
-                // Hit 2: Rapid Back-Slash
                 damage = 45;
                 comboState.attackDuration = 0.18;
                 audio.playSwingMedium();
@@ -1305,7 +1741,6 @@
                 slashMat.color.setHex(0xff00cc);
                 showComboPopupText("2-HIT COMBO!");
             } else if (comboState.step === 3) {
-                // Hit 3: Overhead Downward Heavy Finisher Slam
                 damage = 90;
                 comboState.attackDuration = 0.28;
                 knockback = 3.5;
@@ -1323,9 +1758,23 @@
 
             document.getElementById('hud-combo-label').innerText = `HIT ${comboState.step} / 3`;
 
-            // Detect enemy hit
             const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
 
+            // Check Environmental Crate Harvesting (+20 Mats per hit)
+            for (let i = harvestableCrates.length - 1; i >= 0; i--) {
+                const crate = harvestableCrates[i];
+                const dist = camera.position.distanceTo(crate.mesh.position);
+                if (dist <= range + 1.5) {
+                    audio.playHarvest();
+                    createSparkBurst(crate.mesh.position, 10, 0xffd700);
+                    buildState.mats += 20;
+                    updateMatsHUD();
+                    showKillFeed("+20 CYBER MATS HARVESTED");
+                    break;
+                }
+            }
+
+            // Check Enemy Combat Hit
             for (let i = enemies.length - 1; i >= 0; i--) {
                 const enemy = enemies[i];
                 const dist = camera.position.distanceTo(enemy.mesh.position);
@@ -1350,6 +1799,7 @@
                             enemies.splice(i, 1);
                             gameState.kills++;
                             gameState.score += 150 * comboState.step;
+                            saveHighScore(gameState.score);
                             showKillFeed(`HOSTILE DESTROYED +${150 * comboState.step}`);
                             updateEnemyCounter();
                             checkWaveProgression();
@@ -1359,9 +1809,9 @@
             }
         }
 
-        // SPECIAL ABILITY ('E' KEY) CYBER SHOCKWAVE SLAM
+        // SPECIAL ABILITY ('E' KEY) SHOCKWAVE SLAM
         function triggerShockwave() {
-            if (abilityState.cooldownTimer > 0 || !gameState.active) return;
+            if (abilityState.cooldownTimer > 0 || !gameState.active || gameState.isPaused) return;
 
             abilityState.cooldownTimer = abilityState.cooldownMax;
             audio.playShockwave();
@@ -1394,6 +1844,7 @@
                         enemies.splice(i, 1);
                         gameState.kills++;
                         gameState.score += 300;
+                        saveHighScore(gameState.score);
                         showKillFeed("SHOCKWAVE OBLITERATION +300");
                         updateEnemyCounter();
                         checkWaveProgression();
@@ -1403,24 +1854,21 @@
         }
 
         function updateWeaponAnimation(delta) {
-            // Combo Reset Window Tick
             if (comboState.timer > 0) {
                 comboState.timer -= delta;
                 if (comboState.timer <= 0 && !comboState.isAttacking) {
                     comboState.step = 0;
-                    document.getElementById('hud-combo-label').innerText = "SLASH STRIKE";
+                    document.getElementById('hud-combo-label').innerText = "3-HIT COMBO";
                     bladeMat.color.setHex(0x00f0ff);
                     bladeMat.emissive.setHex(0x00f0ff);
                 }
             }
 
-            // Attack Swing Interpolation
             if (comboState.isAttacking) {
                 comboState.attackTimer -= delta;
                 const progress = 1 - (comboState.attackTimer / comboState.attackDuration);
 
                 if (comboState.step === 1) {
-                    // Quick Diagonal Right-to-Left
                     if (progress < 0.5) {
                         weaponGroup.rotation.x = 0.1 - progress * 2.2;
                         weaponGroup.rotation.y = -0.1 - progress * 2.2;
@@ -1433,7 +1881,6 @@
                         weaponGroup.rotation.z = -1.35 + r * 1.25;
                     }
                 } else if (comboState.step === 2) {
-                    // Rapid Back-Slash Left-to-Right
                     if (progress < 0.5) {
                         weaponGroup.rotation.x = -0.2 + progress * 2.0;
                         weaponGroup.rotation.y = -1.1 + progress * 2.5;
@@ -1446,7 +1893,6 @@
                         weaponGroup.rotation.z = 1.3 - r * 1.4;
                     }
                 } else if (comboState.step === 3) {
-                    // Overhead Downward Heavy Finisher Slam
                     if (progress < 0.4) {
                         weaponGroup.rotation.x = 0.1 + progress * 4.2;
                         weaponGroup.rotation.y = -0.1;
@@ -1468,13 +1914,11 @@
                     document.getElementById('crosshair').classList.remove('expanded');
                 }
             } else {
-                // Idle breathing bob animation
                 const time = Date.now() * 0.003;
                 weaponGroup.position.y = -0.28 + Math.sin(time) * 0.012;
                 weaponGroup.position.x = 0.32 + Math.cos(time * 0.5) * 0.006;
             }
 
-            // Shockwave Expanding Torus Ring
             if (abilityState.shockwaveActive) {
                 abilityState.shockwaveRadius += delta * 36.0;
                 shockwaveMesh.scale.set(abilityState.shockwaveRadius, 1, abilityState.shockwaveRadius);
@@ -1496,7 +1940,7 @@
          *  PLAYER MOVEMENT & TERRAIN ELEVATION
          * ========================================================================= */
         function updatePlayerMovement(delta) {
-            if (!gameState.active) return;
+            if (!gameState.active || gameState.isPaused) return;
 
             player.isSprinting = keys['ShiftLeft'] && player.stamina > 5 && (keys['KeyW'] || keys['KeyS'] || keys['KeyA'] || keys['KeyD']);
             const speed = player.isSprinting ? 12.5 : 6.8;
@@ -1507,7 +1951,6 @@
                 player.stamina = Math.min(player.maxStamina, player.stamina + delta * 25);
             }
 
-            // Flat Ground Direction Vectors (Pitch Excluded!)
             const forwardX = -Math.sin(player.yaw);
             const forwardZ = -Math.cos(player.yaw);
             const rightX = Math.cos(player.yaw);
@@ -1526,7 +1969,6 @@
             player.vel.x = moveX * speed;
             player.vel.z = moveZ * speed;
 
-            // Jump Physics
             if (keys['Space'] && player.isGrounded) {
                 player.vel.y = 8.2;
                 player.isGrounded = false;
@@ -1539,12 +1981,11 @@
 
             const nextPos = player.pos.clone().addScaledVector(player.vel, delta);
 
-            // Perimeter Wall Boundaries
             const bound = arenaSize / 2 - 1.5;
             nextPos.x = Math.max(-bound, Math.min(bound, nextPos.x));
             nextPos.z = Math.max(-bound, Math.min(bound, nextPos.z));
 
-            // Obstacle Crates Collisions
+            // Obstacle & Wall Collisions
             for (const obs of obstacles) {
                 if (nextPos.x > obs.minX && nextPos.x < obs.maxX && nextPos.z > obs.minZ && nextPos.z < obs.maxZ) {
                     nextPos.x = player.pos.x;
@@ -1553,7 +1994,6 @@
                 }
             }
 
-            // Dynamic Terrain Height Query
             const targetTerrainY = getTerrainHeight(nextPos.x, nextPos.z) + 1.6;
 
             if (nextPos.y <= targetTerrainY) {
@@ -1567,7 +2007,6 @@
             player.pos.copy(nextPos);
             camera.position.copy(player.pos);
 
-            // Camera Shake Impulse
             if (cameraShakeTime > 0) {
                 cameraShakeTime -= delta;
                 camera.position.x += (Math.random() - 0.5) * 0.18;
@@ -1578,9 +2017,15 @@
         }
 
         /* =========================================================================
-         *  HUD & STATE MANAGEMENT
+         *  HUD, PAUSE, SETTINGS & MAP EDITOR MANAGERS
          * ========================================================================= */
-        const gameState = { active: false, score: 0, kills: 0 };
+        const gameState = {
+            active: false,
+            isPaused: false,
+            creativeBuildMode: false,
+            score: 0,
+            kills: 0
+        };
 
         function damagePlayer(amount) {
             player.hp = Math.max(0, player.hp - amount);
@@ -1603,7 +2048,7 @@
         function showKillFeed(text) {
             const container = document.getElementById('kill-feed-container');
             const item = document.createElement('div');
-            item.className = 'kill-feed-anim text-pink-400 font-orbitron font-black text-sm sm:text-base tracking-wider drop-shadow-[0_0_8px_rgba(255,0,85,0.8)] mb-1';
+            item.className = 'kill-feed-anim text-pink-400 font-orbitron font-black text-xs sm:text-sm tracking-wider drop-shadow-[0_0_8px_rgba(255,0,85,0.8)] mb-1';
             item.innerText = text;
             container.appendChild(item);
             setTimeout(() => item.remove(), 1350);
@@ -1637,20 +2082,139 @@
         }
 
         function updateHUD() {
+            const high = getSavedHighScore();
             document.getElementById('score-val').innerText = gameState.score;
+            document.getElementById('highscore-val').innerText = high;
             document.getElementById('kills-val').innerText = gameState.kills;
             document.getElementById('hp-text').innerText = `${Math.ceil(player.hp)} / ${player.maxHp}`;
             document.getElementById('hp-bar').style.width = `${(player.hp / player.maxHp) * 100}%`;
             document.getElementById('stamina-text').innerText = `${Math.ceil(player.stamina)}%`;
             document.getElementById('stamina-bar').style.width = `${player.stamina}%`;
+            updateMatsHUD();
         }
+
+        function togglePause() {
+            if (!gameState.active) return;
+
+            gameState.isPaused = !gameState.isPaused;
+            const modal = document.getElementById('pause-modal');
+
+            if (gameState.isPaused) {
+                if (document.pointerLockElement) document.exitPointerLock();
+                document.getElementById('pause-score').innerText = gameState.score;
+                document.getElementById('pause-highscore').innerText = getSavedHighScore();
+                modal.classList.remove('hidden');
+            } else {
+                modal.classList.add('hidden');
+                requestPointerLock();
+            }
+        }
+
+        document.getElementById('hud-pause-btn').addEventListener('click', togglePause);
+        document.getElementById('pause-resume-btn').addEventListener('click', togglePause);
+
+        document.getElementById('pause-settings-btn').addEventListener('click', () => {
+            document.getElementById('settings-modal').classList.remove('hidden');
+        });
+
+        document.getElementById('settings-close-btn').addEventListener('click', () => {
+            document.getElementById('settings-modal').classList.add('hidden');
+        });
+
+        document.getElementById('pause-restart-btn').addEventListener('click', () => {
+            togglePause();
+            resetGame();
+        });
+
+        // Map Editor Modal
+        const mapEditorModal = document.getElementById('map-editor-modal');
+        document.getElementById('hud-editor-btn').addEventListener('click', () => {
+            if (document.pointerLockElement) document.exitPointerLock();
+            updateMapEditorUI();
+            mapEditorModal.classList.remove('hidden');
+        });
+
+        document.getElementById('editor-close-btn').addEventListener('click', () => {
+            mapEditorModal.classList.add('hidden');
+            requestPointerLock();
+        });
+
+        function updateMapEditorUI() {
+            document.getElementById('editor-struct-count').innerText = buildState.placedStructures.length;
+            document.getElementById('editor-mode-status').innerText = gameState.creativeBuildMode ? "CUSTOM CREATIVE MODE" : "WAVE BATTLE MODE";
+        }
+
+        document.getElementById('editor-toggle-mode-btn').addEventListener('click', () => {
+            gameState.creativeBuildMode = !gameState.creativeBuildMode;
+            if (gameState.creativeBuildMode) {
+                enemies.forEach(e => scene.remove(e.mesh));
+                enemies.length = 0;
+                updateEnemyCounter();
+                showKillFeed("CREATIVE BUILD MODE ACTIVATED");
+            } else {
+                spawnEnemyWave();
+            }
+            updateMapEditorUI();
+        });
+
+        document.getElementById('editor-save-btn').addEventListener('click', () => {
+            const data = buildState.placedStructures.map(s => ({
+                type: s.type, x: s.x, y: s.y, z: s.z, rotY: s.rotY
+            }));
+            localStorage.setItem('cyber_battlegrounds_saved_map', JSON.stringify(data));
+            showKillFeed("MAP LAYOUT SAVED TO STORAGE!");
+        });
+
+        document.getElementById('editor-load-btn').addEventListener('click', () => {
+            const raw = localStorage.getItem('cyber_battlegrounds_saved_map');
+            if (!raw) {
+                showKillFeed("NO SAVED MAP FOUND!");
+                return;
+            }
+            clearPlacedStructures();
+            const data = JSON.parse(raw);
+            data.forEach(d => {
+                buildState.activeType = d.type;
+                const structMat = new THREE.MeshStandardMaterial({
+                    color: 0x00f0ff, emissive: 0x00f0ff, emissiveIntensity: 0.35, roughness: 0.2, metalness: 0.8, transparent: true, opacity: 0.85
+                });
+                let mesh;
+                if (d.type === 'wall') mesh = new THREE.Mesh(new THREE.BoxGeometry(4, 4, 0.3), structMat);
+                else if (d.type === 'ramp') {
+                    mesh = new THREE.Mesh(new THREE.BoxGeometry(4, 0.3, Math.hypot(4, 4)), structMat);
+                    mesh.rotation.x = Math.atan2(4, 4);
+                } else if (d.type === 'floor') mesh = new THREE.Mesh(new THREE.BoxGeometry(4, 0.3, 4), structMat);
+
+                mesh.position.set(d.x, d.y, d.z);
+                mesh.rotation.y = d.rotY;
+                scene.add(mesh);
+
+                buildState.placedStructures.push({ type: d.type, mesh, x: d.x, y: d.y, z: d.z, rotY: d.rotY, hp: 150 });
+                if (d.type === 'wall') obstacles.push({ minX: d.x - 2.2, maxX: d.x + 2.2, minZ: d.z - 2.2, maxZ: d.z + 2.2 });
+            });
+            buildState.activeType = 'blade';
+            updateMapEditorUI();
+            showKillFeed("CUSTOM MAP RESTORED!");
+        });
+
+        function clearPlacedStructures() {
+            buildState.placedStructures.forEach(s => scene.remove(s.mesh));
+            buildState.placedStructures.length = 0;
+            updateMapEditorUI();
+        }
+
+        document.getElementById('editor-clear-btn').addEventListener('click', () => {
+            clearPlacedStructures();
+            showKillFeed("ALL BUILDINGS CLEARED!");
+        });
 
         function gameOver() {
             gameState.active = false;
+            saveHighScore(gameState.score);
             if (document.pointerLockElement) document.exitPointerLock();
             document.getElementById('final-score').innerText = gameState.score;
+            document.getElementById('final-highscore').innerText = getSavedHighScore();
             document.getElementById('final-kills').innerText = gameState.kills;
-            document.getElementById('final-wave').innerText = waveNumber;
             document.getElementById('game-over-overlay').classList.remove('hidden');
             document.getElementById('hud').classList.add('hidden');
         }
@@ -1674,8 +2238,11 @@
             gameState.score = 0;
             gameState.kills = 0;
             gameState.active = true;
+            gameState.isPaused = false;
             abilityState.cooldownTimer = 0;
+            buildState.mats = 500;
 
+            setDeckActive('blade');
             updateHUD();
             updateAbilityHUD();
             document.getElementById('game-over-overlay').classList.add('hidden');
@@ -1713,12 +2280,10 @@
         document.addEventListener('pointerlockchange', () => {
             if (document.pointerLockElement === document.body) {
                 isPointerLocked = true;
-                document.getElementById('control-mode-tag').innerText = "Mode: Pointer Lock";
                 startOverlay.classList.add('hidden');
-                if (gameState.active) document.getElementById('hud').classList.remove('hidden');
+                if (gameState.active && !gameState.isPaused) document.getElementById('hud').classList.remove('hidden');
             } else {
                 isPointerLocked = false;
-                document.getElementById('control-mode-tag').innerText = "Mode: Active";
             }
         });
 
@@ -1734,9 +2299,10 @@
             const delta = Math.min((now - lastTime) / 1000, 0.1);
             lastTime = now;
 
-            if (gameState.active) {
+            if (gameState.active && !gameState.isPaused) {
                 updatePlayerMovement(delta);
                 updateWeaponAnimation(delta);
+                updateHologramPreview();
                 updateParticles(delta);
                 updateFloatingTexts(delta);
 
@@ -1754,7 +2320,8 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
         });
 
-        // Start main loop
+        // Initialize display and start loop
+        document.getElementById('highscore-val').innerText = getSavedHighScore();
         animate();
     </script>
 </body>
