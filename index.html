@@ -136,10 +136,21 @@
             width: 58px; height: 58px; border-radius: 12px; border: 2px solid rgba(255, 255, 255, 0.1);
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             color: #fff; font-size: 10px; font-weight: 800; background: rgba(255, 255, 255, 0.04);
-            cursor: pointer; transition: all 0.15s ease; position: relative;
+            cursor: pointer; transition: all 0.15s ease; position: relative; overflow: hidden;
         }
         .slot.active { border-color: #00fff2; background: rgba(0, 255, 242, 0.25); box-shadow: 0 0 25px rgba(0, 255, 242, 0.6); transform: translateY(-8px); }
         .slot span { font-size: 18px; margin-bottom: 2px; }
+        .slot-cd {
+            position: absolute; bottom: 0; left: 0; width: 100%; height: 0%;
+            background: rgba(255, 0, 85, 0.65); backdrop-filter: blur(2px);
+            pointer-events: none; transition: height 0.05s linear;
+        }
+        #crosshair-cd {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 34px; height: 34px; border-radius: 50%;
+            border: 2px solid transparent; border-top-color: #00fff2;
+            pointer-events: none; opacity: 0; transition: opacity 0.1s, transform 0.05s ease;
+        }
 
         /* Ability Cards */
         .abilities-container { position: absolute; bottom: 20px; right: 20px; display: flex; gap: 10px; pointer-events: auto; }
@@ -238,6 +249,7 @@
 <body>
     <div id="canvas-container"></div>
     <div id="crosshair"></div>
+    <div id="crosshair-cd"></div>
     <div id="hitmarker"></div>
     <div id="damage-vignette"></div>
     <div id="damage-numbers-container"></div>
@@ -297,13 +309,13 @@
 
         <!-- Weapon & Building Hotbar -->
         <div class="hotbar">
-            <div class="slot active" id="slot-1" onclick="window.selectSlot(1)"><span>⚔️</span>[1] Katana</div>
-            <div class="slot" id="slot-2" onclick="window.selectSlot(2)"><span>🔫</span>[2] Rifle</div>
-            <div class="slot" id="slot-3" onclick="window.selectSlot(3)"><span>💥</span>[3] Shotgun</div>
-            <div class="slot" id="slot-4" onclick="window.selectSlot(4)"><span>🚀</span>[4] Rocket</div>
-            <div class="slot" id="slot-5" onclick="window.selectSlot(5)"><span>🧱</span>[5] Wall</div>
-            <div class="slot" id="slot-6" onclick="window.selectSlot(6)"><span>📐</span>[6] Ramp</div>
-            <div class="slot" id="slot-7" onclick="window.selectSlot(7)"><span>🟦</span>[7] Floor</div>
+            <div class="slot active" id="slot-1" onclick="window.selectSlot(1)"><span>⚔️</span>[1] Katana<div class="slot-cd" id="slot-cd-1"></div></div>
+            <div class="slot" id="slot-2" onclick="window.selectSlot(2)"><span>🔫</span>[2] Rifle<div class="slot-cd" id="slot-cd-2"></div></div>
+            <div class="slot" id="slot-3" onclick="window.selectSlot(3)"><span>💥</span>[3] Shotgun<div class="slot-cd" id="slot-cd-3"></div></div>
+            <div class="slot" id="slot-4" onclick="window.selectSlot(4)"><span>🚀</span>[4] Rocket<div class="slot-cd" id="slot-cd-4"></div></div>
+            <div class="slot" id="slot-5" onclick="window.selectSlot(5)"><span>🧱</span>[5] Wall<div class="slot-cd" id="slot-cd-5"></div></div>
+            <div class="slot" id="slot-6" onclick="window.selectSlot(6)"><span>📐</span>[6] Ramp<div class="slot-cd" id="slot-cd-6"></div></div>
+            <div class="slot" id="slot-7" onclick="window.selectSlot(7)"><span>🟦</span>[7] Floor<div class="slot-cd" id="slot-cd-7"></div></div>
         </div>
 
         <!-- Abilities Bar -->
@@ -478,6 +490,8 @@
             xp: 0, level: 1,
             mats: 100,
             activeSlot: 1,
+            weaponCd: 0,
+            weaponMaxCd: 0.1,
             abilityCd: 0,
             stealthCd: 0,
             isStealth: false,
@@ -489,6 +503,16 @@
             meshGroup: null
         };
         window.player = player;
+
+        const SLOT_COOLDOWNS = {
+            1: 0.35, // Katana slash swing
+            2: 0.12, // Rapid Plasma Rifle
+            3: 0.80, // Heavy Scatter Shotgun
+            4: 1.65, // Rocket Launcher Pod
+            5: 0.20, // Wall Structure
+            6: 0.20, // Ramp Structure
+            7: 0.20  // Floor Structure
+        };
 
         let teammate = {
             active: false,
@@ -767,80 +791,157 @@
 
         function createEnemyMesh(type = 'DRONE') {
             const group = new THREE.Group();
+            group.userData = { type, animatedParts: {} };
 
             if (type === 'DRONE') {
-                const coreMat = new THREE.MeshStandardMaterial({ color: 0xff0055, emissive: 0xff0055, emissiveIntensity: 2.5 });
-                const armorMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, metalness: 0.9, roughness: 0.2 });
-                const core = new THREE.Mesh(new THREE.SphereGeometry(0.35, 16, 16), coreMat);
+                const coreMat = new THREE.MeshStandardMaterial({ color: 0xff0055, emissive: 0xff0055, emissiveIntensity: 2.8, roughness: 0.2 });
+                const armorMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, metalness: 0.95, roughness: 0.1 });
+                const neonMat = new THREE.MeshStandardMaterial({ color: 0x00fff2, emissive: 0x00fff2, emissiveIntensity: 2.5 });
+
+                const core = new THREE.Mesh(new THREE.IcosahedronGeometry(0.38, 2), coreMat);
                 
-                const ring = new THREE.Mesh(new THREE.TorusGeometry(0.75, 0.08, 12, 32), armorMat);
-                ring.rotation.x = Math.PI / 2;
-                
-                const eye = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.3), new THREE.MeshBasicMaterial({ color: 0x00fff2 }));
+                const outerRing = new THREE.Mesh(new THREE.TorusGeometry(0.85, 0.06, 16, 32), armorMat);
+                outerRing.rotation.x = Math.PI / 2;
+
+                const innerRing = new THREE.Mesh(new THREE.TorusGeometry(0.62, 0.04, 16, 32), neonMat);
+                innerRing.rotation.y = Math.PI / 2;
+
+                // 4 Diagonal Thruster Nacelles with Energy Flames
+                for (let i = 0; i < 4; i++) {
+                    const angle = (i * Math.PI / 2) + Math.PI / 4;
+                    const arm = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.06, 0.7), armorMat);
+                    arm.position.set(Math.cos(angle) * 0.45, 0, Math.sin(angle) * 0.45);
+                    arm.rotation.y = -angle;
+
+                    const thruster = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.14, 0.3, 12), armorMat);
+                    thruster.position.set(Math.cos(angle) * 0.85, 0, Math.sin(angle) * 0.85);
+
+                    const flame = new THREE.Mesh(new THREE.ConeGeometry(0.09, 0.3, 8), neonMat);
+                    flame.position.y = -0.22;
+                    flame.rotation.x = Math.PI;
+                    thruster.add(flame);
+
+                    group.add(arm, thruster);
+                }
+
+                const eye = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.14, 0.25, 12), neonMat);
                 eye.rotation.x = Math.PI / 2;
-                eye.position.set(0, 0, -0.35);
+                eye.position.set(0, 0, -0.42);
 
-                group.add(core, ring, eye);
+                group.add(core, outerRing, innerRing, eye);
+                group.userData.animatedParts = { outerRing, innerRing };
             } else if (type === 'RUNNER') {
-                const armorMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.85, roughness: 0.2 });
-                const neonMat = new THREE.MeshStandardMaterial({ color: 0xff0055, emissive: 0xff0055, emissiveIntensity: 1.8 });
-                const visorMat = new THREE.MeshStandardMaterial({ color: 0x00fff2, emissive: 0x00fff2, emissiveIntensity: 2.2 });
+                const armorMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, metalness: 0.9, roughness: 0.15 });
+                const neonMat = new THREE.MeshStandardMaterial({ color: 0xff0055, emissive: 0xff0055, emissiveIntensity: 2.2 });
+                const visorMat = new THREE.MeshStandardMaterial({ color: 0x00fff2, emissive: 0x00fff2, emissiveIntensity: 3.0 });
 
-                const torso = new THREE.Mesh(new THREE.BoxGeometry(0.7, 1.1, 0.45), armorMat);
-                torso.position.y = 1.1;
+                const torso = new THREE.Mesh(new THREE.BoxGeometry(0.7, 1.15, 0.45), armorMat);
+                torso.position.y = 1.15;
                 
-                const chestCore = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.3, 0.1), neonMat);
-                chestCore.position.set(0, 0.2, 0.23);
-                torso.add(chestCore);
+                // Neon Spine Nodes
+                for (let s = 0; s < 4; s++) {
+                    const node = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.12, 0.1), neonMat);
+                    node.position.set(0, -0.3 + s * 0.22, -0.24);
+                    torso.add(node);
+                }
 
-                const head = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.4, 0.4), armorMat);
-                head.position.set(0, 0.75, 0);
-                const visor = new THREE.Mesh(new THREE.BoxGeometry(0.38, 0.12, 0.1), visorMat);
-                visor.position.set(0, 0.05, 0.21);
+                // Cyber Pauldrons
+                const pauldronL = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.2, 0.35), neonMat);
+                pauldronL.position.set(-0.48, 0.45, 0);
+                const pauldronR = pauldronL.clone();
+                pauldronR.position.x = 0.48;
+                torso.add(pauldronL, pauldronR);
+
+                const head = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.42, 0.42), armorMat);
+                head.position.set(0, 0.78, 0);
+                const visor = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.12, 0.12), visorMat);
+                visor.position.set(0, 0.06, 0.22);
                 head.add(visor);
                 torso.add(head);
 
+                // Forearm Cyber Blades
                 const armL = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.8, 0.2), armorMat);
-                armL.position.set(-0.5, 0, 0);
+                armL.position.set(-0.48, -0.05, 0);
+                const bladeL = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.5, 0.12), visorMat);
+                bladeL.position.set(-0.08, -0.3, 0.15);
+                armL.add(bladeL);
+
                 const armR = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.8, 0.2), armorMat);
-                armR.position.set(0.5, 0, 0);
-                const legL = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.85, 0.22), armorMat);
-                legL.position.set(-0.2, -0.9, 0);
-                const legR = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.85, 0.22), armorMat);
-                legR.position.set(0.2, -0.9, 0);
+                armR.position.set(0.48, -0.05, 0);
+                const bladeR = bladeL.clone();
+                bladeR.position.x = 0.08;
+                armR.add(bladeR);
+
+                const legL = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.9, 0.24), armorMat);
+                legL.position.set(-0.2, -0.95, 0);
+                const legR = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.9, 0.24), armorMat);
+                legR.position.set(0.2, -0.95, 0);
 
                 torso.add(armL, armR, legL, legR);
                 group.add(torso);
+                group.userData.animatedParts = { armL, armR, legL, legR };
             } else if (type === 'MECH' || type === 'BOSS') {
                 const isBoss = (type === 'BOSS');
-                const scale = isBoss ? 2.4 : 1.25;
-                const bodyColor = isBoss ? 0x2d124d : 0x0f172a;
+                const scale = isBoss ? 2.4 : 1.3;
+                const bodyColor = isBoss ? 0x220738 : 0x0f172a;
                 const glowColor = isBoss ? 0xffea00 : 0xff0055;
 
-                const armorMat = new THREE.MeshStandardMaterial({ color: bodyColor, metalness: 0.9, roughness: 0.1 });
-                const reactorMat = new THREE.MeshStandardMaterial({ color: glowColor, emissive: glowColor, emissiveIntensity: 2.2 });
+                const armorMat = new THREE.MeshStandardMaterial({ color: bodyColor, metalness: 0.95, roughness: 0.1 });
+                const reactorMat = new THREE.MeshStandardMaterial({ color: glowColor, emissive: glowColor, emissiveIntensity: 2.8 });
+                const secondaryGlow = new THREE.MeshStandardMaterial({ color: 0x00fff2, emissive: 0x00fff2, emissiveIntensity: 2.5 });
 
-                const torso = new THREE.Mesh(new THREE.BoxGeometry(1.2 * scale, 1.6 * scale, 0.9 * scale), armorMat);
-                torso.position.y = 1.6 * scale;
+                const torso = new THREE.Mesh(new THREE.BoxGeometry(1.3 * scale, 1.7 * scale, 1.0 * scale), armorMat);
+                torso.position.y = 1.7 * scale;
 
-                const reactor = new THREE.Mesh(new THREE.OctahedronGeometry(0.4 * scale), reactorMat);
-                reactor.position.set(0, 0.1 * scale, 0.48 * scale);
+                // Arc Reactor Chest Core
+                const reactor = new THREE.Mesh(new THREE.OctahedronGeometry(0.45 * scale, 2), reactorMat);
+                reactor.position.set(0, 0.1 * scale, 0.52 * scale);
                 torso.add(reactor);
 
-                const shoulderL = new THREE.Mesh(new THREE.BoxGeometry(0.45 * scale, 0.45 * scale, 0.9 * scale), armorMat);
-                shoulderL.position.set(-0.85 * scale, 0.7 * scale, 0);
-                const shoulderR = new THREE.Mesh(new THREE.BoxGeometry(0.45 * scale, 0.45 * scale, 0.9 * scale), armorMat);
-                shoulderR.position.set(0.85 * scale, 0.7 * scale, 0);
-                torso.add(shoulderL, shoulderR);
+                // Heavy Shoulder Plasma Cannon & Rocket Pod
+                const cannonArm = new THREE.Mesh(new THREE.CylinderGeometry(0.2 * scale, 0.22 * scale, 1.2 * scale, 12), armorMat);
+                cannonArm.rotation.x = Math.PI / 2;
+                cannonArm.position.set(-0.95 * scale, 0.6 * scale, 0.2 * scale);
+                
+                const cannonMuzzle = new THREE.Mesh(new THREE.CylinderGeometry(0.18 * scale, 0.18 * scale, 0.2 * scale, 12), secondaryGlow);
+                cannonMuzzle.rotation.x = Math.PI / 2;
+                cannonMuzzle.position.set(0, 0.65 * scale, 0);
+                cannonArm.add(cannonMuzzle);
 
+                const rocketPod = new THREE.Mesh(new THREE.BoxGeometry(0.5 * scale, 0.5 * scale, 0.7 * scale), armorMat);
+                rocketPod.position.set(0.95 * scale, 0.6 * scale, 0.1 * scale);
+                for (let r = 0; r < 4; r++) {
+                    const rTip = new THREE.Mesh(new THREE.ConeGeometry(0.08 * scale, 0.2 * scale, 8), reactorMat);
+                    rTip.rotation.x = Math.PI / 2;
+                    rTip.position.set((r % 2 === 0 ? -0.12 : 0.12) * scale, (r < 2 ? 0.12 : -0.12) * scale, -0.38 * scale);
+                    rocketPod.add(rTip);
+                }
+                torso.add(cannonArm, rocketPod);
+
+                // Energy Waist Shield Ring
+                const shieldRing = new THREE.Mesh(new THREE.TorusGeometry(1.1 * scale, 0.05 * scale, 12, 32), secondaryGlow);
+                shieldRing.rotation.x = Math.PI / 2;
+                shieldRing.position.y = -0.5 * scale;
+                torso.add(shieldRing);
+
+                let orbRing1 = null, orbRing2 = null;
                 if (isBoss) {
-                    const crown = new THREE.Mesh(new THREE.ConeGeometry(0.5, 1.0, 4), reactorMat);
-                    crown.position.set(0, 1.2 * scale, 0);
+                    // Radiant Boss Energy Crown & Orbital Rings
+                    const crown = new THREE.Mesh(new THREE.ConeGeometry(0.6 * scale, 1.2 * scale, 5), reactorMat);
+                    crown.position.set(0, 1.35 * scale, 0);
                     crown.rotation.y = Math.PI / 4;
-                    torso.add(crown);
+
+                    orbRing1 = new THREE.Mesh(new THREE.TorusGeometry(2.0 * scale, 0.06 * scale, 16, 40), reactorMat);
+                    orbRing1.rotation.x = Math.PI / 3;
+
+                    orbRing2 = new THREE.Mesh(new THREE.TorusGeometry(2.3 * scale, 0.06 * scale, 16, 40), secondaryGlow);
+                    orbRing2.rotation.y = Math.PI / 3;
+
+                    torso.add(crown, orbRing1, orbRing2);
                 }
 
                 group.add(torso);
+                group.userData.animatedParts = { reactor, shieldRing, orbRing1, orbRing2 };
             }
             return group;
         }
@@ -1011,6 +1112,12 @@
         });
 
         function performPrimaryAction() {
+            if (player.weaponCd > 0) return;
+
+            const cd = SLOT_COOLDOWNS[player.activeSlot] || 0.2;
+            player.weaponCd = cd;
+            player.weaponMaxCd = cd;
+
             if (player.activeSlot === 1) { // Katana
                 playSound('slash');
                 player.comboCount++;
@@ -1552,6 +1659,33 @@
                     muzzleFlashLight.intensity -= 15.0 * dt;
                 }
 
+                if (player.weaponCd > 0) {
+                    player.weaponCd = Math.max(0, player.weaponCd - dt);
+                }
+
+                for (let s = 1; s <= 7; s++) {
+                    const cdOverlay = document.getElementById(`slot-cd-${s}`);
+                    if (cdOverlay) {
+                        if (s === player.activeSlot && player.weaponCd > 0) {
+                            const pct = (player.weaponCd / player.weaponMaxCd) * 100;
+                            cdOverlay.style.height = `${pct}%`;
+                        } else {
+                            cdOverlay.style.height = '0%';
+                        }
+                    }
+                }
+
+                const crosshairCd = document.getElementById('crosshair-cd');
+                if (crosshairCd) {
+                    if (player.weaponCd > 0) {
+                        const remainingPct = player.weaponCd / player.weaponMaxCd;
+                        crosshairCd.style.opacity = '1';
+                        crosshairCd.style.transform = `translate(-50%, -50%) rotate(${(1 - remainingPct) * 360}deg)`;
+                    } else {
+                        crosshairCd.style.opacity = '0';
+                    }
+                }
+
                 if (player.abilityCd > 0) player.abilityCd -= dt;
                 if (player.stealthCd > 0) player.stealthCd -= dt;
                 if (player.isStealth) {
@@ -1585,6 +1719,7 @@
                 }
 
                 // Enemies AI & Gravity Loop
+                const gameTime = clock.getElapsedTime();
                 enemies.forEach(e => {
                     if (e.velY === undefined) e.velY = 0;
                     e.velY -= 25.0 * dt;
@@ -1594,6 +1729,26 @@
                     if (e.pos.y <= eGroundY) {
                         e.pos.y = eGroundY;
                         e.velY = 0;
+                    }
+
+                    const parts = e.meshGroup.userData && e.meshGroup.userData.animatedParts;
+                    if (parts) {
+                        if (e.type === 'DRONE') {
+                            if (parts.outerRing) parts.outerRing.rotation.z += dt * 3.0;
+                            if (parts.innerRing) parts.innerRing.rotation.x -= dt * 4.5;
+                            e.meshGroup.position.y += Math.sin(gameTime * 4 + e.pos.x) * 0.005;
+                        } else if (e.type === 'RUNNER') {
+                            let stride = Math.sin(gameTime * 12);
+                            if (parts.armL) parts.armL.rotation.x = stride * 0.6;
+                            if (parts.armR) parts.armR.rotation.x = -stride * 0.6;
+                            if (parts.legL) parts.legL.rotation.x = -stride * 0.6;
+                            if (parts.legR) parts.legR.rotation.x = stride * 0.6;
+                        } else if (e.type === 'MECH' || e.type === 'BOSS') {
+                            if (parts.shieldRing) parts.shieldRing.rotation.z += dt * 2.0;
+                            if (parts.reactor) parts.reactor.rotation.y += dt * 1.5;
+                            if (parts.orbRing1) parts.orbRing1.rotation.z += dt * 2.5;
+                            if (parts.orbRing2) parts.orbRing2.rotation.x += dt * 3.0;
+                        }
                     }
 
                     if (!player.isStealth) {
