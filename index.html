@@ -608,47 +608,158 @@
         function createFirstPersonViewmodels() {
             const container = new THREE.Group();
 
-            // Blade (Slot 1)
+            // Katana (Slot 1) - High Tech Cyber Katana
             const bladeGroup = new THREE.Group();
-            const bladeGeo = new THREE.BoxGeometry(0.06, 0.08, 1.4);
-            const bladeMat = new THREE.MeshStandardMaterial({ color: 0x00fff2, emissive: 0x00fff2, emissiveIntensity: 1.5, metalness: 0.9, roughness: 0.1 });
+            
+            const handleGeo = new THREE.CylinderGeometry(0.025, 0.03, 0.3, 12);
+            const handleMat = new THREE.MeshStandardMaterial({ color: 0x090d16, roughness: 0.5, metalness: 0.8 });
+            const handle = new THREE.Mesh(handleGeo, handleMat);
+            handle.position.set(0.35, -0.4, -0.2);
+            handle.rotation.x = -0.3;
+
+            const guardGeo = new THREE.BoxGeometry(0.12, 0.02, 0.12);
+            const guardMat = new THREE.MeshStandardMaterial({ color: 0x00fff2, emissive: 0x00fff2, emissiveIntensity: 1.2, metalness: 0.9 });
+            const guard = new THREE.Mesh(guardGeo, guardMat);
+            guard.position.set(0, 0.15, 0);
+            handle.add(guard);
+
+            const bladeGeo = new THREE.BoxGeometry(0.025, 0.08, 1.3);
+            const bladeMat = new THREE.MeshStandardMaterial({ 
+                color: 0x00fff2, 
+                emissive: 0x00fff2, 
+                emissiveIntensity: 2.8, 
+                metalness: 0.95, 
+                roughness: 0.05 
+            });
             const blade = new THREE.Mesh(bladeGeo, bladeMat);
-            blade.position.set(0.35, -0.3, -0.6);
-            blade.rotation.set(-0.4, -0.3, 0.2);
-            bladeGroup.add(blade);
+            blade.position.set(0, 0.16, -0.65);
+            handle.add(blade);
+
+            const spineGeo = new THREE.BoxGeometry(0.035, 0.06, 1.25);
+            const spineMat = new THREE.MeshStandardMaterial({ color: 0x0b1329, metalness: 0.9, roughness: 0.2 });
+            const spine = new THREE.Mesh(spineGeo, spineMat);
+            spine.position.set(0, 0, -0.02);
+            blade.add(spine);
+
+            for (let i = 0; i < 5; i++) {
+                const ringGeo = new THREE.BoxGeometry(0.04, 0.085, 0.04);
+                const ringMat = new THREE.MeshBasicMaterial({ color: 0xff0055 });
+                const ring = new THREE.Mesh(ringGeo, ringMat);
+                ring.position.set(0, 0, -0.4 + i * 0.22);
+                blade.add(ring);
+            }
+
+            bladeGroup.add(handle);
             container.add(bladeGroup);
 
-            // Rifle (Slot 2)
+            // Plasma Rifle (Slot 2) - Cyberpunk Pulse Rifle
             const rifleGroup = new THREE.Group();
-            const rBody = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.18, 0.8), new THREE.MeshStandardMaterial({ color: 0x0f172a, metalness: 0.9, roughness: 0.2 }));
-            rBody.position.set(0.3, -0.25, -0.5);
-            const rCoil = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.5), new THREE.MeshStandardMaterial({ color: 0x00fff2, emissive: 0x00fff2, emissiveIntensity: 2.0 }));
-            rCoil.rotation.x = Math.PI / 2;
-            rCoil.position.set(0.3, -0.2, -0.6);
-            rifleGroup.add(rBody, rCoil);
+            const rBodyGeo = new THREE.BoxGeometry(0.12, 0.18, 0.75);
+            const rBodyMat = new THREE.MeshStandardMaterial({ color: 0x0b132b, metalness: 0.9, roughness: 0.2 });
+            const rBody = new THREE.Mesh(rBodyGeo, rBodyMat);
+            rBody.position.set(0.32, -0.25, -0.5);
+
+            const barrelMat = new THREE.MeshStandardMaterial({ color: 0x1c2541, metalness: 0.9, roughness: 0.1 });
+            const barrel1 = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.6, 12), barrelMat);
+            barrel1.rotation.x = Math.PI / 2;
+            barrel1.position.set(-0.03, 0.04, -0.5);
+            
+            const barrel2 = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.6, 12), barrelMat);
+            barrel2.rotation.x = Math.PI / 2;
+            barrel2.position.set(0.03, 0.04, -0.5);
+
+            const coilGeo = new THREE.TorusGeometry(0.045, 0.012, 12, 24);
+            const coilMat = new THREE.MeshStandardMaterial({ color: 0x00fff2, emissive: 0x00fff2, emissiveIntensity: 3.0 });
+            for(let c = 0; c < 4; c++) {
+                const coil = new THREE.Mesh(coilGeo, coilMat);
+                coil.position.set(0, 0.04, -0.28 - c * 0.1);
+                rBody.add(coil);
+            }
+
+            const scopeFrame = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.1, 0.04), rBodyMat);
+            scopeFrame.position.set(0, 0.14, -0.15);
+            const scopeHolo = new THREE.Mesh(new THREE.PlaneGeometry(0.07, 0.07), new THREE.MeshBasicMaterial({ color: 0x00fff2, transparent: true, opacity: 0.85, side: THREE.DoubleSide }));
+            scopeHolo.position.set(0, 0.02, 0);
+            scopeFrame.add(scopeHolo);
+
+            const magMat = new THREE.MeshStandardMaterial({ color: 0xff0055, emissive: 0xff0055, emissiveIntensity: 2.0 });
+            const mag = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.22, 0.12), magMat);
+            mag.position.set(0, -0.15, -0.1);
+            mag.rotation.x = 0.25;
+
+            rBody.add(barrel1, barrel2, scopeFrame, mag);
+            rifleGroup.add(rBody);
             container.add(rifleGroup);
 
-            // Shotgun (Slot 3)
+            // Scatter Pulse Shotgun (Slot 3) - Quad-Barrel Heavy Shotgun
             const shotgunGroup = new THREE.Group();
-            const sBody = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.22, 0.7), new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.8 }));
-            sBody.position.set(0.3, -0.25, -0.5);
+            const sBody = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.22, 0.7), new THREE.MeshStandardMaterial({ color: 0x1c1917, metalness: 0.85, roughness: 0.25 }));
+            sBody.position.set(0.32, -0.26, -0.5);
+
+            const quadBarrelMat = new THREE.MeshStandardMaterial({ color: 0x292524, metalness: 0.95, roughness: 0.1 });
+            const barrelPositions = [[-0.04, 0.04], [0.04, 0.04], [-0.04, -0.03], [0.04, -0.03]];
+            barrelPositions.forEach(([bx, by]) => {
+                const bMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.55, 12), quadBarrelMat);
+                bMesh.rotation.x = Math.PI / 2;
+                bMesh.position.set(bx, by, -0.45);
+                sBody.add(bMesh);
+            });
+
+            const ventMat = new THREE.MeshStandardMaterial({ color: 0xff0055, emissive: 0xff0055, emissiveIntensity: 2.5 });
+            const ventL = new THREE.Mesh(new THREE.BoxGeometry(0.01, 0.12, 0.35), ventMat);
+            ventL.position.set(-0.095, 0, -0.2);
+            const ventR = ventL.clone();
+            ventR.position.x = 0.095;
+            sBody.add(ventL, ventR);
+
             shotgunGroup.add(sBody);
             container.add(shotgunGroup);
 
-            // Rocket Launcher (Slot 4)
+            // Rocket Launcher (Slot 4) - Cyber Heavy Ordnance Pod
             const rocketGroup = new THREE.Group();
-            const rTube = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.14, 0.9, 12), new THREE.MeshStandardMaterial({ color: 0x090d16, metalness: 0.9 }));
-            rTube.rotation.x = Math.PI / 2;
-            rTube.position.set(0.35, -0.2, -0.5);
-            rocketGroup.add(rTube);
+            const rPodBody = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.28, 0.85), new THREE.MeshStandardMaterial({ color: 0x090d16, metalness: 0.9, roughness: 0.15 }));
+            rPodBody.position.set(0.36, -0.22, -0.5);
+
+            const chamberMat = new THREE.MeshStandardMaterial({ color: 0x020617, metalness: 0.9 });
+            const tipGlowMat = new THREE.MeshStandardMaterial({ color: 0xffea00, emissive: 0xffea00, emissiveIntensity: 2.5 });
+            for (let i = 0; i < 4; i++) {
+                const cx = (i % 2 === 0 ? -0.07 : 0.07);
+                const cy = (i < 2 ? 0.07 : -0.07);
+                const tube = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.8, 12), chamberMat);
+                tube.rotation.x = Math.PI / 2;
+                tube.position.set(cx, cy, -0.02);
+
+                const missileHead = new THREE.Mesh(new THREE.ConeGeometry(0.045, 0.15, 12), tipGlowMat);
+                missileHead.rotation.x = -Math.PI / 2;
+                missileHead.position.set(cx, cy, -0.43);
+
+                rPodBody.add(tube, missileHead);
+            }
+
+            const laserMod = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.06, 0.2), new THREE.MeshStandardMaterial({ color: 0x00fff2, emissive: 0x00fff2, emissiveIntensity: 1.8 }));
+            laserMod.position.set(0, 0.17, -0.2);
+            rPodBody.add(laserMod);
+
+            rocketGroup.add(rPodBody);
             container.add(rocketGroup);
 
-            // Build Pad (Slots 5-7)
+            // Cyber Architect Builder Pad (Slots 5-7)
             const buildPadGroup = new THREE.Group();
-            const pad = new THREE.Mesh(new THREE.PlaneGeometry(0.4, 0.3), new THREE.MeshBasicMaterial({ color: 0x00fff2, side: THREE.DoubleSide, transparent: true, opacity: 0.75 }));
-            pad.position.set(0.25, -0.2, -0.4);
-            pad.rotation.x = -0.5;
-            buildPadGroup.add(pad);
+            const gauntlet = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.08, 0.45), new THREE.MeshStandardMaterial({ color: 0x0f172a, metalness: 0.9, roughness: 0.2 }));
+            gauntlet.position.set(0.28, -0.25, -0.4);
+
+            const holoCanvasGeo = new THREE.PlaneGeometry(0.35, 0.28);
+            const holoCanvasMat = new THREE.MeshBasicMaterial({ color: 0x00fff2, side: THREE.DoubleSide, transparent: true, opacity: 0.8 });
+            const holoScreen = new THREE.Mesh(holoCanvasGeo, holoCanvasMat);
+            holoScreen.position.set(0, 0.18, -0.05);
+            holoScreen.rotation.x = -0.6;
+            gauntlet.add(holoScreen);
+
+            const miniStructure = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.12, 0.12), new THREE.MeshBasicMaterial({ color: 0x00fff2, wireframe: true }));
+            miniStructure.position.set(0, 0.32, -0.05);
+            gauntlet.add(miniStructure);
+
+            buildPadGroup.add(gauntlet);
             container.add(buildPadGroup);
 
             return { container, bladeGroup, rifleGroup, shotgunGroup, rocketGroup, buildPadGroup };
@@ -960,17 +1071,40 @@
         }
 
         function fireBullet(dmg, speed) {
-            if (muzzleFlashLight) muzzleFlashLight.intensity = 3.5;
+            if (muzzleFlashLight) {
+                muzzleFlashLight.color.setHex(player.activeSlot === 3 ? 0xff0055 : 0x00fff2);
+                muzzleFlashLight.intensity = 4.5;
+            }
             const dir = new THREE.Vector3(0, 0, -1).applyEuler(new THREE.Euler(player.rotX, player.rotY, 0, 'YXZ')).normalize();
+            
+            if (player.activeSlot === 3) {
+                dir.x += (Math.random() - 0.5) * 0.12;
+                dir.y += (Math.random() - 0.5) * 0.12;
+                dir.z += (Math.random() - 0.5) * 0.12;
+                dir.normalize();
+            }
+
             const startPos = player.pos.clone().add(new THREE.Vector3(0, 1.4, 0));
 
-            const tracerGeo = new THREE.CylinderGeometry(0.04, 0.04, 0.9, 8);
-            const tracerMat = new THREE.MeshBasicMaterial({ color: 0x00fff2 });
-            const tracerMesh = new THREE.Mesh(tracerGeo, tracerMat);
+            const bulletGroup = new THREE.Group();
+            const beamColor = (player.activeSlot === 3) ? 0xff0055 : 0x00fff2;
 
-            tracerMesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
-            tracerMesh.position.copy(startPos);
-            scene.add(tracerMesh);
+            const coreGeo = new THREE.CylinderGeometry(0.03, 0.03, 1.2, 8);
+            const coreMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+            const coreMesh = new THREE.Mesh(coreGeo, coreMat);
+
+            const shellGeo = new THREE.CylinderGeometry(0.07, 0.07, 1.3, 8);
+            const shellMat = new THREE.MeshBasicMaterial({ color: beamColor, transparent: true, opacity: 0.85 });
+            const shellMesh = new THREE.Mesh(shellGeo, shellMat);
+
+            bulletGroup.add(coreMesh, shellMesh);
+            bulletGroup.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
+            bulletGroup.position.copy(startPos);
+
+            const bulletLight = new THREE.PointLight(beamColor, 2.0, 8);
+            bulletGroup.add(bulletLight);
+
+            scene.add(bulletGroup);
 
             projectiles.push({
                 pos: startPos,
@@ -978,29 +1112,51 @@
                 dmg: dmg,
                 life: 1.5,
                 isRocket: false,
-                mesh: tracerMesh
+                mesh: bulletGroup
             });
         }
 
         function fireRocket() {
+            if (muzzleFlashLight) {
+                muzzleFlashLight.color.setHex(0xffea00);
+                muzzleFlashLight.intensity = 6.0;
+            }
             const dir = new THREE.Vector3(0, 0, -1).applyEuler(new THREE.Euler(player.rotX, player.rotY, 0, 'YXZ')).normalize();
             const startPos = player.pos.clone().add(new THREE.Vector3(0, 1.4, 0));
 
-            const rocketGeo = new THREE.CylinderGeometry(0.12, 0.12, 1.0, 12);
-            const rocketMat = new THREE.MeshStandardMaterial({ color: 0xff0055, emissive: 0xff0033, emissiveIntensity: 1.8, metalness: 0.8 });
-            const mesh = new THREE.Mesh(rocketGeo, rocketMat);
+            const rocketGroup = new THREE.Group();
 
-            mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
-            mesh.position.copy(startPos);
-            scene.add(mesh);
+            const bodyGeo = new THREE.CylinderGeometry(0.12, 0.12, 1.1, 12);
+            const bodyMat = new THREE.MeshStandardMaterial({ color: 0x090d16, metalness: 0.9, roughness: 0.1 });
+            const bodyMesh = new THREE.Mesh(bodyGeo, bodyMat);
+
+            const tipGeo = new THREE.ConeGeometry(0.13, 0.35, 12);
+            const tipMat = new THREE.MeshStandardMaterial({ color: 0xffea00, emissive: 0xffea00, emissiveIntensity: 3.0 });
+            const tipMesh = new THREE.Mesh(tipGeo, tipMat);
+            tipMesh.position.y = 0.65;
+
+            const flameGeo = new THREE.ConeGeometry(0.15, 0.5, 12);
+            const flameMat = new THREE.MeshBasicMaterial({ color: 0xff0055, transparent: true, opacity: 0.9 });
+            const flameMesh = new THREE.Mesh(flameGeo, flameMat);
+            flameMesh.position.y = -0.7;
+            flameMesh.rotation.x = Math.PI;
+
+            rocketGroup.add(bodyMesh, tipMesh, flameMesh);
+            rocketGroup.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
+            rocketGroup.position.copy(startPos);
+
+            const rocketLight = new THREE.PointLight(0xffea00, 4.0, 14);
+            rocketGroup.add(rocketLight);
+
+            scene.add(rocketGroup);
 
             projectiles.push({
                 pos: startPos,
-                vel: dir.clone().multiplyScalar(22),
+                vel: dir.clone().multiplyScalar(24),
                 dmg: 120,
                 life: 3.0,
                 isRocket: true,
-                mesh: mesh
+                mesh: rocketGroup
             });
         }
 
